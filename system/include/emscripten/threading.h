@@ -81,7 +81,7 @@ uint64_t emscripten_atomic_xor_u64(void/*uint64_t*/ *addr, uint64_t val); // Emu
 
 int emscripten_futex_wait(void/*uint32_t*/ *addr, uint32_t val, double maxWaitMilliseconds);
 int emscripten_futex_wake(void/*uint32_t*/ *addr, int count);
-int emscripten_futex_wake_or_requeue(void/*uint32_t*/ *addr, int count, int cmpValue, void/*uint32_t*/ *addr2);
+int emscripten_futex_wake_or_requeue(void/*uint32_t*/ *addr, int count, void/*uint32_t*/ *addr2, int cmpValue);
 
 typedef union em_variant_val
 {
@@ -102,6 +102,7 @@ typedef struct em_queued_call
 } em_queued_call;
 
 void emscripten_sync_run_in_main_thread(em_queued_call *call);
+void *emscripten_sync_run_in_main_thread_0(int function);
 void *emscripten_sync_run_in_main_thread_1(int function, void *arg1);
 void *emscripten_sync_run_in_main_thread_2(int function, void *arg1, void *arg2);
 void *emscripten_sync_run_in_main_thread_3(int function, void *arg1, void *arg2, void *arg3);
@@ -147,6 +148,15 @@ void emscripten_conditional_set_current_thread_status(EM_THREAD_STATUS expectedS
 // When thread profiler is not enabled (not building with --threadprofiling), this is a no-op.
 void emscripten_set_thread_name(pthread_t threadId, const char *name);
 
+// Gets the stored pointer to a string representing the canvases to transfer to the created thread.
+int emscripten_pthread_attr_gettransferredcanvases(const pthread_attr_t *a, const char **str);
+
+// Specifies a comma-delimited list of canvas DOM element IDs to transfer to the thread to be created.
+// Note: this pointer is weakly stored (not copied) to the given pthread_attr_t, so must be held alive until
+// pthread_create() has been called. If 0 or "", no canvases are transferred. The special value "#canvas" denotes
+// the element stored in Module.canvas.
+int emscripten_pthread_attr_settransferredcanvases(pthread_attr_t *a, const char *str);
+
 struct thread_profiler_block
 {
 	// One of THREAD_STATUS_*
@@ -165,7 +175,6 @@ struct thread_profiler_block
 #define EM_PROXIED_FPATHCONF 46
 #define EM_PROXIED_CONFSTR 68
 #define EM_PROXIED_SYSCONF 72
-#define EM_PROXIED_SBRK 73
 #define EM_PROXIED_ATEXIT 110
 #define EM_PROXIED_GETENV 111
 #define EM_PROXIED_CLEARENV 112

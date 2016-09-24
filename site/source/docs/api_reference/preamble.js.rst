@@ -38,7 +38,7 @@ Calling compiled C functions from JavaScript
 	
 	.. note:: 
 		- ``ccall`` uses the C stack for temporary values. If you pass a string then it is only "alive" until the call is complete. If the code being called saves the pointer to be used later, it may point to invalid data. 
-		- If you need a string to live forever, you can create it, for example, using ``_malloc`` and :js:func:`writeStringToMemory`. However, you must later delete it manually!	
+		- If you need a string to live forever, you can create it, for example, using ``_malloc`` and :js:func:`stringToUTF8`. However, you must later delete it manually!
 		- LLVM optimizations can inline and remove functions, after which you will not be able to call them. Similarly, function names minified by the *Closure Compiler* are inaccessible. In either case, the solution is to add the functions to the ``EXPORTED_FUNCTIONS`` list when you invoke *emcc* :  
 		
 			::
@@ -47,7 +47,7 @@ Calling compiled C functions from JavaScript
 			
 			Exported functions can be called as normal: ::
 			
-				a_result = Module.ccall('myfunc', 'number', ['number'], 10)
+				a_result = Module.ccall('myfunc', 'number', ['number'], [10])
 		
 
 	:param ident: The name of the C function to be called.	
@@ -87,7 +87,7 @@ Calling compiled C functions from JavaScript
 	
 	.. note:: 
 		- ``cwrap`` uses the C stack for temporary values. If you pass a string then it is only "alive" until the call is complete. If the code being called saves the pointer to be used later, it may point to invalid data. 
-		- If you need a string to live forever, you can create it, for example, using ``_malloc`` and :js:func:`writeStringToMemory`. However, you must later delete it manually!
+		- If you need a string to live forever, you can create it, for example, using ``_malloc`` and :js:func:`stringToUTF8`. However, you must later delete it manually!
 		- LLVM optimizations can inline and remove functions, after which you will not be able to "wrap" them. Similarly, function names minified by the *Closure Compiler* are inaccessible. In either case, the solution is to add the functions to the ``EXPORTED_FUNCTIONS`` list when you invoke *emcc* :  
 		
 			::
@@ -166,14 +166,14 @@ Conversion functions — strings, pointers and arrays
 	
 
 
-.. js:function:: stringToUTF8(str, outPtr[, maxBytesToWrite])
+.. js:function:: stringToUTF8(str, outPtr, maxBytesToWrite)
 
 	Copies the given JavaScript ``String`` object ``str`` to the Emscripten HEAP at address ``outPtr``, null-terminated and encoded in UTF8 form.
 
 	:param str: A JavaScript ``String`` object.
 	:type str: String
 	:param outPtr: Pointer to data copied from ``str``, encoded in UTF8 format and null-terminated.
-	:param maxBytesToWrite: A limit on the number of bytes to write out.
+	:param maxBytesToWrite: A limit on the number of bytes that this function can at most write out. If the string is longer than this, the output is truncated. The outputted string will always be null terminated, even if truncation occurred.
 
 
 .. js:function:: UTF16ToString(ptr)
@@ -185,7 +185,7 @@ Conversion functions — strings, pointers and arrays
 	
 
 
-.. js:function:: stringToUTF16(str, outPtr[, maxBytesToWrite])
+.. js:function:: stringToUTF16(str, outPtr, maxBytesToWrite)
 
 	Copies the given JavaScript ``String`` object ``str`` to the Emscripten HEAP at address ``outPtr``, null-terminated and encoded in UTF16LE form. 
 	
@@ -194,7 +194,7 @@ Conversion functions — strings, pointers and arrays
 	:param str: A JavaScript ``String`` object.
 	:type str: String
 	:param outPtr: Pointer to data copied from ``str``, encoded in UTF16LE format and null-terminated.
-	:param maxBytesToWrite: A limit on the number of bytes to write out.
+	:param maxBytesToWrite: A limit on the number of bytes that this function can at most write out. If the string is longer than this, the output is truncated. The outputted string will always be null terminated, even if truncation occurred.
 
 
 
@@ -206,7 +206,7 @@ Conversion functions — strings, pointers and arrays
 	:returns: A JavaScript ``String`` object.
 	
 
-.. js:function:: stringToUTF32(str, outPtr[, maxBytesToWrite])
+.. js:function:: stringToUTF32(str, outPtr, maxBytesToWrite)
 
 	Copies the given JavaScript ``String`` object ``str`` to the Emscripten HEAP at address ``outPtr``, null-terminated and encoded in UTF32LE form. 
 	
@@ -215,7 +215,7 @@ Conversion functions — strings, pointers and arrays
 	:param str: A JavaScript ``String`` object.
 	:type str: String
 	:param outPtr: Pointer to data copied from ``str``, encoded in encoded in UTF32LE format and null-terminated.
-	:param maxBytesToWrite: A limit on the number of bytes to write out.
+	:param maxBytesToWrite: A limit on the number of bytes that this function can at most write out. If the string is longer than this, the output is truncated. The outputted string will always be null terminated, even if truncation occurred.
 
 
 
@@ -243,6 +243,9 @@ Conversion functions — strings, pointers and arrays
 .. js:function:: writeStringToMemory(string, buffer, dontAddNull)
 
 	Writes a JavaScript string to a specified address in the heap. 
+
+	.. warning:: This function is deprecated, you should call the function ``stringToUTF8`` instead, which provides a secure
+	bounded version of the same functionality instead.
 	
 	.. code-block:: javascript
 	

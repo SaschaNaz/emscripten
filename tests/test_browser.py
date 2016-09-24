@@ -323,6 +323,58 @@ If manually bisecting:
     self.run_browser('page.html', 'You should see |load me right before|.', '/report_result?1')
     self.run_browser('page.html', 'You should see |load me right before|.', '/report_result?2')
 
+  def test_preload_caching_indexeddb_name(self):
+    open(os.path.join(self.get_dir(), 'somefile.txt'), 'w').write('''load me right before running the code please''')
+    def make_main(path):
+      print path
+      open(os.path.join(self.get_dir(), 'main.cpp'), 'w').write(self.with_report_result(r'''
+        #include <stdio.h>
+        #include <string.h>
+        #include <emscripten.h>
+
+        extern "C" {
+          extern int checkPreloadResults();
+        }
+
+        int main(int argc, char** argv) {
+          FILE *f = fopen("%s", "r");
+          char buf[100];
+          fread(buf, 1, 20, f);
+          buf[20] = 0;
+          fclose(f);
+          printf("|%%s|\n", buf);
+
+          int result = 0;
+
+          result += !strcmp("load me right before", buf);
+          result += checkPreloadResults();
+
+          REPORT_RESULT();
+          return 0;
+        }
+      ''' % path))
+
+    open(os.path.join(self.get_dir(), 'test.js'), 'w').write('''
+      mergeInto(LibraryManager.library, {
+        checkPreloadResults: function() {
+          var cached = 0;
+          var packages = Object.keys(Module['preloadResults']);
+          packages.forEach(function(package) {
+            var fromCache = Module['preloadResults'][package]['fromCache'];
+            if (fromCache)
+              ++ cached;
+          });
+          return cached;
+        }
+      });
+    ''')
+
+    make_main('somefile.txt')
+    Popen([PYTHON, FILE_PACKAGER, os.path.join(self.get_dir(), 'somefile.data'), '--use-preload-cache', '--indexedDB-name=testdb', '--preload', os.path.join(self.get_dir(), 'somefile.txt'), '--js-output=' + os.path.join(self.get_dir(), 'somefile.js')]).communicate()
+    Popen([PYTHON, EMCC, os.path.join(self.get_dir(), 'main.cpp'), '--js-library', os.path.join(self.get_dir(), 'test.js'), '--pre-js', 'somefile.js', '-o', 'page.html']).communicate()
+    self.run_browser('page.html', 'You should see |load me right before|.', '/report_result?1')
+    self.run_browser('page.html', 'You should see |load me right before|.', '/report_result?2')
+
   def test_multifile(self):
     # a few files inside a directory
     self.clear()
@@ -600,8 +652,8 @@ window.close = function() {
       Module['arguments'] = ['-0'];
     ''')
 
-    self.btest('sdl_canvas_alpha.c', reference='sdl_canvas_alpha.png', reference_slack=11)
-    self.btest('sdl_canvas_alpha.c', args=['--pre-js', 'flag_0.js'], reference='sdl_canvas_alpha_flag_0.png', reference_slack=11)
+    self.btest('sdl_canvas_alpha.c', reference='sdl_canvas_alpha.png', reference_slack=12)
+    self.btest('sdl_canvas_alpha.c', args=['--pre-js', 'flag_0.js'], reference='sdl_canvas_alpha_flag_0.png', reference_slack=12)
 
 
   def test_sdl_key(self):
@@ -983,7 +1035,13 @@ keydown(100);keyup(100); // trigger the end
           context = canvas.getContext('experimental-webgl', {stencil: true});
           attributes = context.getContextAttributes();
           return attributes.stencil;
-       }
+        },
+        webglAlphaSupported: function() {
+          canvas = document.createElement('canvas');
+          context = canvas.getContext('experimental-webgl', {alpha: true});
+          attributes = context.getContextAttributes();
+          return attributes.alpha;
+        }
       });
     ''')
     
@@ -993,9 +1051,9 @@ keydown(100);keyup(100); // trigger the end
     shutil.copyfile(filepath, temp_filepath)
     
     # perform tests with attributes activated 
-    self.btest('test_webgl_context_attributes_glut.c', '1', args=['--js-library', 'check_webgl_attributes_support.js', '-DAA_ACTIVATED', '-DDEPTH_ACTIVATED', '-DSTENCIL_ACTIVATED'])
-    self.btest('test_webgl_context_attributes_sdl.c', '1', args=['--js-library', 'check_webgl_attributes_support.js', '-DAA_ACTIVATED', '-DDEPTH_ACTIVATED', '-DSTENCIL_ACTIVATED'])
-    self.btest('test_webgl_context_attributes_glfw.c', '1', args=['--js-library', 'check_webgl_attributes_support.js', '-DAA_ACTIVATED', '-DDEPTH_ACTIVATED', '-DSTENCIL_ACTIVATED'])
+    self.btest('test_webgl_context_attributes_glut.c', '1', args=['--js-library', 'check_webgl_attributes_support.js', '-DAA_ACTIVATED', '-DDEPTH_ACTIVATED', '-DSTENCIL_ACTIVATED', '-DALPHA_ACTIVATED'])
+    self.btest('test_webgl_context_attributes_sdl.c', '1', args=['--js-library', 'check_webgl_attributes_support.js', '-DAA_ACTIVATED', '-DDEPTH_ACTIVATED', '-DSTENCIL_ACTIVATED', '-DALPHA_ACTIVATED'])
+    self.btest('test_webgl_context_attributes_glfw.c', '1', args=['--js-library', 'check_webgl_attributes_support.js', '-DAA_ACTIVATED', '-DDEPTH_ACTIVATED', '-DSTENCIL_ACTIVATED', '-DALPHA_ACTIVATED'])
     
     # perform tests with attributes desactivated
     self.btest('test_webgl_context_attributes_glut.c', '1', args=['--js-library', 'check_webgl_attributes_support.js'])
@@ -1472,8 +1530,15 @@ keydown(100);keyup(100); // trigger the end
   def test_emscripten_main_loop(self):
     self.btest('emscripten_main_loop.cpp', '0')
 
+  def test_emscripten_main_loop_settimeout(self):
+    self.btest('emscripten_main_loop_settimeout.cpp', '1')
+
   def test_emscripten_main_loop_and_blocker(self):
     self.btest('emscripten_main_loop_and_blocker.cpp', '0')
+
+  def test_emscripten_main_loop_setimmediate(self):
+    for args in [[], ['--proxy-to-worker']]:
+      self.btest('emscripten_main_loop_setimmediate.cpp', '1', args=args)
 
   def test_sdl_quit(self):
     self.btest('sdl_quit.c', '1')
@@ -2052,10 +2117,19 @@ Module["preRun"].push(function () {
       print opts
       self.btest(path_from_root('tests', 'webgl_destroy_context.cpp'), args=opts + ['--shell-file', path_from_root('tests/webgl_destroy_context_shell.html'), '-s', 'NO_EXIT_RUNTIME=1'], expected='0', timeout=20)
 
+  def test_webgl_context_params(self):
+    self.btest(path_from_root('tests', 'webgl_color_buffer_readpixels.cpp'), expected='0', timeout=20)
+
   def test_webgl2(self):
     for opts in [[], ['-O2', '-g1', '--closure', '1'], ['-s', 'FULL_ES2=1']]:
       print opts
       self.btest(path_from_root('tests', 'webgl2.cpp'), args=['-s', 'USE_WEBGL2=1'] + opts, expected='0')
+
+  def test_webgl2_objects(self):
+    self.btest(path_from_root('tests', 'webgl2_objects.cpp'), args=['-s', 'USE_WEBGL2=1'], expected='0')
+
+  def test_webgl2_ubos(self):
+    self.btest(path_from_root('tests', 'webgl2_ubos.cpp'), args=['-s', 'USE_WEBGL2=1'], expected='0')
 
   def test_sdl_touch(self):
     for opts in [[], ['-O2', '-g1', '--closure', '1']]:
@@ -2515,6 +2589,9 @@ window.close = function() {
     ''')
     self.btest('sdl2_pumpevents.c', expected='7', args=['--pre-js', 'pre.js', '-s', 'USE_SDL=2'])
 
+  def test_sdl2_timer(self):
+    self.btest('sdl2_timer.c', expected='5', args=['-s', 'USE_SDL=2'])
+
   def test_sdl2_canvas_size(self):
     self.btest('sdl2_canvas_size.c', expected='1', args=['-s', 'USE_SDL=2'])
 
@@ -2629,12 +2706,18 @@ window.close = function() {
     self.btest('emterpreter_async_iostream.cpp', '1', args=['-s', 'EMTERPRETIFY=1', '-s', 'EMTERPRETIFY_ASYNC=1'])
 
   def test_modularize(self):
-    for opts in [[], ['-O1'], ['-O2', '-profiling'], ['-O2']]:
+    for opts in [[], ['-O1'], ['-O2', '-profiling'], ['-O2'], ['-O2', '--closure', '1']]:
       for args, code in [
         ([], 'Module();'), # defaults
         (['-s', 'EXPORT_NAME="HelloWorld"'], '''
           if (typeof Module !== "undefined") throw "what?!"; // do not pollute the global scope, we are modularized!
           HelloWorld();
+          if (HelloWorld.Pointer_stringify) { // module constructor should not be polluted
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', 'http://localhost:8888/report_result?1', true);
+            xhr.send();
+            setTimeout(function() { window.close() }, 1000);
+          }
         '''), # use EXPORT_NAME
         (['-s', 'EXPORT_NAME="HelloWorld"'], '''
           var hello = HelloWorld({ noInitialRun: true, onRuntimeInitialized: function() {
@@ -2665,7 +2748,9 @@ window.close = function() {
                             'glue']).communicate()[0]
     assert os.path.exists('glue.cpp')
     assert os.path.exists('glue.js')
-    self.btest(os.path.join('webidl', 'test.cpp'), '1', args=['--post-js', 'glue.js', '-I' + path_from_root('tests', 'webidl'), '-DBROWSER'])
+    for opts in [[], ['-O1'], ['-O2']]:
+      print opts
+      self.btest(os.path.join('webidl', 'test.cpp'), '1', args=['--post-js', 'glue.js', '-I' + path_from_root('tests', 'webidl'), '-DBROWSER'] + opts)
 
   def test_dynamic_link(self):
     open('pre.js', 'w').write('''
@@ -2813,7 +2898,8 @@ window.close = function() {
 
   # Test that a pthread can spawn another pthread of its own.
   def test_pthread_create_pthread(self):
-    self.btest(path_from_root('tests', 'pthread', 'test_pthread_create_pthread.cpp'), expected='1', args=['-O3', '-s', 'USE_PTHREADS=2', '--separate-asm', '-s', 'PTHREAD_POOL_SIZE=2', '-s', 'NO_EXIT_RUNTIME=1'], timeout=30)
+    for opt in [['-s', 'USE_PTHREADS=2', '--separate-asm'], ['-s', 'USE_PTHREADS=1', '--proxy-to-worker']]:
+      self.btest(path_from_root('tests', 'pthread', 'test_pthread_create_pthread.cpp'), expected='1', args=opt + ['-O3', '-s', 'PTHREAD_POOL_SIZE=2', '-s', 'NO_EXIT_RUNTIME=1'], timeout=30)
 
   # Test another case of pthreads spawning pthreads, but this time the callers immediately join on the threads they created.
   def test_pthread_nested_spawns(self):
@@ -2947,6 +3033,24 @@ window.close = function() {
     try_delete('pthread-main.js')
     self.run_browser('test2.html', '', '/report_result?1')
 
+  # Test that if the main thread is performing a futex wait while a pthread needs it to do a proxied operation (before that pthread would wake up the main thread), that it's not a deadlock.
+  def test_pthread_proxying_in_futex_wait(self):
+    self.btest(path_from_root('tests', 'pthread', 'test_pthread_proxying_in_futex_wait.cpp'), expected='0', args=['-O3', '-s', 'USE_PTHREADS=2', '-s', 'PTHREAD_POOL_SIZE=1', '--separate-asm'], timeout=30)
+
+  # Test that sbrk() operates properly in multithreaded conditions
+  def test_pthread_sbrk(self):
+    for aborting_malloc in [0, 1]:
+      print 'aborting malloc=' + str(aborting_malloc)
+      # With aborting malloc = 1, test allocating memory in threads
+      # With aborting malloc = 0, allocate so much memory in threads that some of the allocations fail.
+      self.btest(path_from_root('tests', 'pthread', 'test_pthread_sbrk.cpp'), expected='0', args=['-O3', '-s', 'USE_PTHREADS=1', '-s', 'PTHREAD_POOL_SIZE=8', '--separate-asm', '-s', 'ABORTING_MALLOC=' + str(aborting_malloc), '-DABORTING_MALLOC=' + str(aborting_malloc), '-s', 'TOTAL_MEMORY=134217728'], timeout=30)
+
+  # Test that -s ABORTING_MALLOC=0 works in both pthreads and non-pthreads builds. (sbrk fails gracefully)
+  def test_pthread_gauge_available_memory(self):
+    for opts in [[], ['-O2']]:
+      for args in [[], ['-s', 'USE_PTHREADS=1']]:
+        self.btest(path_from_root('tests', 'gauge_available_memory.cpp'), expected='1', args=['-s', 'ABORTING_MALLOC=0'] + args + opts, timeout=30)
+
   # test atomicrmw i64
   def test_atomicrmw_i64(self):
     Popen([PYTHON, EMCC, path_from_root('tests', 'atomicrmw_i64.ll'), '-s', 'USE_PTHREADS=1', '-s', 'IN_TEST_HARNESS=1', '-o', 'test.html']).communicate()
@@ -2984,6 +3088,9 @@ window.close = function() {
 
   def test_canvas_size_proxy(self):
     self.btest(path_from_root('tests', 'canvas_size_proxy.c'), expected='0', args=['--proxy-to-worker'])
+
+  def test_custom_messages_proxy(self):
+    self.btest(path_from_root('tests', 'custom_messages_proxy.c'), expected='1', args=['--proxy-to-worker', '--shell-file', path_from_root('tests', 'custom_messages_proxy_shell.html'), '--post-js', path_from_root('tests', 'custom_messages_proxy_postjs.js')])
 
   def test_separate_asm(self):
     for opts in [['-O0'], ['-O1'], ['-O2'], ['-O2', '--closure', '1']]:
@@ -3066,3 +3173,20 @@ window.close = function() {
     open('huge.dat', 'w').write(''.join([chr((x*x)&255) for x in range(size*2)])) # larger than a memory chunk
     self.btest('split_memory_large_file.cpp', expected='1', args=['-s', 'SPLIT_MEMORY=' + str(size), '-s', 'TOTAL_MEMORY=100000000', '-s', 'TOTAL_STACK=10240', '--preload-file', 'huge.dat'], timeout=60)
 
+  def test_binaryen(self):
+    self.btest('browser_test_hello_world.c', expected='0', args=['-s', 'BINARYEN=1', '-s', 'BINARYEN_METHOD="interpret-binary"'])
+    self.btest('browser_test_hello_world.c', expected='0', args=['-s', 'BINARYEN=1', '-s', 'BINARYEN_METHOD="interpret-binary"', '-O2'])
+
+  def test_utf8_textdecoder(self):
+    self.btest('benchmark_utf8.cpp', expected='0', args=['--embed-file', path_from_root('tests/utf8_corpus.txt') + '@/utf8_corpus.txt'])
+
+  def test_utf16_textdecoder(self):
+    self.btest('benchmark_utf16.cpp', expected='0', args=['--embed-file', path_from_root('tests/utf16_corpus.txt') + '@/utf16_corpus.txt', '-s', 'EXTRA_EXPORTED_RUNTIME_METHODS=["UTF16ToString","stringToUTF16","lengthBytesUTF16"]'])
+
+  def test_webgl_offscreen_canvas_in_pthread(self):
+    for args in [[], ['-DTEST_CHAINED_WEBGL_CONTEXT_PASSING']]:
+      self.btest('gl_in_pthread.cpp', expected='1', args=args + ['-s', 'USE_PTHREADS=1', '-s', 'PTHREAD_POOL_SIZE=2', '-s', 'OFFSCREENCANVAS_SUPPORT=1'])
+
+  def test_webgl_offscreen_canvas_in_mainthread_after_pthread(self):
+    for args in [[], ['-DTEST_MAIN_THREAD_EXPLICIT_COMMIT']]:
+      self.btest('gl_in_mainthread_after_pthread.cpp', expected='0', args=args+['-s', 'USE_PTHREADS=1', '-s', 'PTHREAD_POOL_SIZE=2', '-s', 'OFFSCREENCANVAS_SUPPORT=1'])

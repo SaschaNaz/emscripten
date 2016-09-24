@@ -103,13 +103,21 @@ while 1:
   def try_js(args=[]):
     shared.try_delete(filename + '.js')
     js_args = [shared.PYTHON, shared.EMCC, opts] + llvm_opts + [fullname, '-o', filename + '.js'] + CSMITH_CFLAGS + args + ['-w']
+    if 0: # binaryen testing, off by default for now
+      js_args += ['-s', 'BINARYEN=1']
+      if random.random() < 0.333:
+        js_args += ['-s', 'BINARYEN_METHOD="interpret-s-expr"']
+      elif random.random() < 0.5:
+        js_args += ['-s', 'BINARYEN_METHOD="interpret-binary"']
+      else:
+        js_args += ['-s', 'BINARYEN_METHOD="interpret-asm2wasm"']
     if random.random() < 0.5:
       js_args += ['-s', 'ALLOW_MEMORY_GROWTH=1']
-    if random.random() < 0.5 and 'ALLOW_MEMORY_GROWTH=1' not in js_args:
+    if random.random() < 0.5 and 'ALLOW_MEMORY_GROWTH=1' not in js_args and 'BINARYEN=1' not in js_args:
       js_args += ['-s', 'MAIN_MODULE=1']
     if random.random() < 0.25:
       js_args += ['-s', 'INLINING_LIMIT=1'] # inline nothing, for more call interaction
-    if random.random() < 0.333:
+    if random.random() < 0.333 and 'BINARYEN=1' not in js_args:
       js_args += ['-s', 'EMTERPRETIFY=1']
       if random.random() < 0.5:
         if random.random() < 0.5:
@@ -133,7 +141,11 @@ while 1:
 
   def execute_js(engine):
     print '(run in %s)' % engine
-    js = shared.run_js(filename + '.js', engine=engine1, check_timeout=True, assert_returncode=None)
+    try:
+      js = shared.run_js(filename + '.js', engine=engine, check_timeout=True, assert_returncode=None)
+    except:
+      print 'failed to run in primary'
+      return False
     js = js.split('\n')[0] + '\n' # remove any extra printed stuff (node workarounds)
     return correct1 == js or correct2 == js
 
@@ -156,11 +168,11 @@ while 1:
     continue
 
   # This is ok. Try validation in secondary JS engine
-  if opts != '-O0' and 'ALLOW_MEMORY_GROWTH=1' not in js_args and engine2:
+  if opts != '-O0' and 'ALLOW_MEMORY_GROWTH=1' not in js_args and engine2 and 'BINARYEN=1' not in js_args:
     try:
       js2 = shared.run_js(filename + '.js', stderr=PIPE, engine=engine2 + ['-w'], full_output=True, check_timeout=True, assert_returncode=None)
     except:
-      print 'failed to run in secondary', js2
+      print 'failed to run in secondary'
       break
 
     # asm.js testing
