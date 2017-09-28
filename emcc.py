@@ -293,7 +293,7 @@ def run():
   stderr = PIPE if not DEBUG else None # unless we are in DEBUG mode
 
   EMCC_CXX = '--emscripten-cxx' in sys.argv
-  sys.argv = filter(lambda x: x != '--emscripten-cxx', sys.argv)
+  sys.argv = list(filter(lambda x: x != '--emscripten-cxx', sys.argv))
 
   if len(sys.argv) <= 1 or ('--help' not in sys.argv and len(sys.argv) >= 2 and sys.argv[1] != '--version'):
     shared.check_sanity(force=DEBUG)
@@ -310,7 +310,7 @@ def run():
   response_file = True
   while response_file:
     response_file = None
-    for index in range(1, len(sys.argv)):
+    for index in range(1, len(list(sys.argv))):
       if sys.argv[index][0] == '@':
         # found one, loop again next time
         response_file = True
@@ -908,7 +908,7 @@ There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR P
         assert shared.Settings.FORCE_ALIGNED_MEMORY == 0, 'forced aligned memory is not supported in fastcomp'
         assert shared.Settings.PGO == 0, 'pgo not supported in fastcomp'
         assert shared.Settings.QUANTUM_SIZE == 4, 'altering the QUANTUM_SIZE is not supported'
-      except Exception, e:
+      except Exception as e:
         logging.error('Compiler settings are incompatible with fastcomp. You can fall back to the older compiler core, although that is not recommended, see http://kripken.github.io/emscripten-site/docs/building_from_source/LLVM-Backend.html')
         raise e
 

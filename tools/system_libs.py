@@ -1,9 +1,12 @@
 from __future__ import print_function
 import os, json, logging, zipfile, glob, shutil
-import shared
+try:
+  from . import shared
+except ImportError:
+  import shared
 from subprocess import Popen, CalledProcessError
 import subprocess, multiprocessing, re
-from sys import maxint
+from sys import maxsize
 from tools.shared import check_call
 
 stdout = None
@@ -26,7 +29,7 @@ def run_commands(commands):
   else:
     pool = shared.Building.get_multiprocessing_pool()
     # https://stackoverflow.com/questions/1408356/keyboard-interrupts-with-pythons-multiprocessing-pool, https://bugs.python.org/issue8296
-    pool.map_async(call_process, commands, chunksize=1).get(maxint)
+    pool.map_async(call_process, commands, chunksize=1).get(maxsize)
 
 def files_in_path(path_components, filenames):
   srcdir = shared.path_from_root(*path_components)
@@ -509,7 +512,7 @@ def calculate(temp_files, in_temp, stdout_, stderr_, forced=[]):
 # emscripten-ports library management (https://github.com/emscripten-ports)
 #---------------------------------------------------------------------------
 
-import ports
+from . import ports
 
 class Ports(object):
   @staticmethod
