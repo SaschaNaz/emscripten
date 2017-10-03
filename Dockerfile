@@ -2,7 +2,7 @@
 FROM ubuntu:16.04
 SHELL ["/bin/bash", "-c"]
 ENV DEBIAN_FRONTEND noninteractive
-
+ARG TEST_TARGET
 COPY . /
 
 RUN apt-get update \
@@ -19,6 +19,8 @@ RUN apt-get update \
  && ./emsdk install latest \
  && ./emsdk activate latest \
  && source ./emsdk_env.sh \
+ && PATH=/:$PATH \
  && cd .. \
+ && which emcc \
  && ./emcc --version \
- && python tests/runner.py
+ && python tests/runner.py $TEST_TARGET skip:test_time skip:test_sse1_full skip:test_sse2_full skip:test_sse3_full skip:test_ssse3_full skip:test_sse4_1_full
