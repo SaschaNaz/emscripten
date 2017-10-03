@@ -23,4 +23,4 @@ RUN apt-get update \
  && cd .. \
  && which emcc \
  && ./emcc --version \
- && python tests/runner.py $TEST_TARGET skip:test_time skip:test_sse1_full skip:test_sse2_full skip:test_sse3_full skip:test_ssse3_full skip:test_sse4_1_full
+ && python tests/runner.py $TEST_TARGET skip:ALL.test_time skip:ALL.test_sse1_full skip:ALL.test_sse2_full skip:ALL.test_sse3_full skip:ALL.test_ssse3_full skip:ALL.test_sse4_1_full
