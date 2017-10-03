@@ -2,10 +2,13 @@
 FROM ubuntu:16.04
 SHELL ["/bin/bash", "-c"]
 ENV DEBIAN_FRONTEND noninteractive
+ENV CFLAGS "-I /usr/lib/gcc/x86_64-linux-gnu/5/include"
 
 COPY . /
 
-RUN apt-get update \
+RUN PATH=/:$PATH \
+ && echo 'Canada/Pacific' | tee /etc/timezone \
+ && apt-get update \
  && apt-get install -y python wget git cmake build-essential software-properties-common \
  && add-apt-repository ppa:webupd8team/java \
  && apt-get update \
@@ -21,4 +24,4 @@ RUN apt-get update \
  && source ./emsdk_env.sh \
  && cd .. \
  && ./emcc --version \
- && python tests/runner.py
+ && python tests/runner.py test_time test_sse1_full
