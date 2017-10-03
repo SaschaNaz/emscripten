@@ -2,7 +2,6 @@
 FROM ubuntu:16.04
 SHELL ["/bin/bash", "-c"]
 ENV DEBIAN_FRONTEND noninteractive
-ENV CFLAGS "-I /usr/lib/gcc/x86_64-linux-gnu/5/include"
 
 COPY . /
 
