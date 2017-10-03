@@ -1158,7 +1158,7 @@ def skip_requested_tests(args, modules):
   return filter(lambda arg: arg is not None, args)
 
 def args_for_random_tests(args, modules):
-  if len(args) == 0:
+  if len(args) <= 1:
     return args
   first = args[1]
   if first.startswith('random'):
