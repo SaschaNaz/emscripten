@@ -21,6 +21,6 @@ RUN apt-get update \
  && source ./emsdk_env.sh \
  && PATH=/:$PATH \
  && cd .. \
- && which emcc \
+ && echo $(which emcc) \
  && ./emcc --version \
  && python tests/runner.py $TEST_TARGET skip:ALL.test_time skip:ALL.test_sse1_full skip:ALL.test_sse2_full skip:ALL.test_sse3_full skip:ALL.test_ssse3_full skip:ALL.test_sse4_1_full
