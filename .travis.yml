@@ -38,7 +38,7 @@ services:
 - docker
 
 before_install:
-- if [ -f ${DOCKER_CACHE_FILE} ]; then gunzip -c ${DOCKER_CACHE_FILE} | docker load; else docker pull ubuntu:16.04 fi
+- if [ -f ${DOCKER_CACHE_FILE} ]; then gunzip -c ${DOCKER_CACHE_FILE} | docker load; else docker pull ubuntu:16.04; fi
 
 install:
 - docker build -t emscripten:$TRAVIS_COMMIT --pull=true .
