@@ -1,8 +1,11 @@
 sudo: required
 
-language: python
+cache:
+  directories:
+  - /home/travis/docker/
 
 env:
+- DOCKER_CACHE_FILE=/home/travis/docker/cache.tar.gz
 - TEST_TARGET=test_a*
 - TEST_TARGET=test_b*
 - TEST_TARGET=test_c*
@@ -33,10 +36,16 @@ services:
 - docker
 
 before_install:
+- if [ -f ${DOCKER_CACHE_FILE} ]; then gunzip -c ${DOCKER_CACHE_FILE} | docker load; fi
+
+install:
 - docker pull ubuntu:16.04
+- docker build --build-arg TEST_TARGET=$TEST_TARGET -t emscripten:$TRAVIS_COMMIT .
 
 script:
-- docker build --build-arg TEST_TARGET=$TEST_TARGET --cache-from emscripten -t emscripten:$TRAVIS_COMMIT .
+- docker run emscripten:$TRAVIS_COMMIT python tests/runner.py $TEST_TARGET skip:ALL.test_time skip:ALL.test_sse1_full skip:ALL.test_sse2_full skip:ALL.test_sse3_full skip:ALL.test_ssse3_full skip:ALL.test_sse4_1_full
+- if [[ ${TRAVIS_BRANCH} == "master" ]] && [[ ${TRAVIS_PULL_REQUEST} == "false" ]]; then mkdir -p $(dirname ${DOCKER_CACHE_FILE})
+- docker save $(docker history -q ${DOCKER_REPOSITORY}:${TRAVIS_COMMIT} | grep -v '<missing>') | gzip > ${DOCKER_CACHE_FILE}; fi
 
 notifications:
   email: false
