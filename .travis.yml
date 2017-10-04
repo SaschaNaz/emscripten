@@ -2,46 +2,63 @@ sudo: required
 
 language: python
 
+cache:
+  directories:
+  - /home/travis/docker/
+
 env:
-- TEST_TARGET=test_a*
-- TEST_TARGET=test_b*
-- TEST_TARGET=test_c*
-- TEST_TARGET=test_d*
-- TEST_TARGET=test_e*
-- TEST_TARGET=test_f*
-- TEST_TARGET=test_g*
-- TEST_TARGET=test_h*
-- TEST_TARGET=test_i*
-- TEST_TARGET=test_j*
-- TEST_TARGET=test_k*
-- TEST_TARGET=test_l*
-- TEST_TARGET=test_m*
-- TEST_TARGET=test_n*
-- TEST_TARGET=test_o*
-- TEST_TARGET=test_p*
-- TEST_TARGET=test_q*
-- TEST_TARGET=test_r*
-- TEST_TARGET=test_s*
-- TEST_TARGET=test_t*
-- TEST_TARGET=test_u*
-- TEST_TARGET=test_v*
-- TEST_TARGET=test_x*
-- TEST_TARGET=test_y*
-- TEST_TARGET=test_z*
+  global:
+  - DOCKER_CACHE_FILE=/home/travis/docker/cache.tar.gz
+  - DOCKER_REPOSITORY=emscripten
+  matrix:
+  - TEST_TARGET=test_a*
+  - TEST_TARGET=test_b*
+  - TEST_TARGET=test_c*
+  - TEST_TARGET=test_d*
+  - TEST_TARGET=test_e*
+  - TEST_TARGET=test_f*
+  - TEST_TARGET=test_g*
+  - TEST_TARGET=test_h*
+  - TEST_TARGET=test_i*
+  - TEST_TARGET=test_j*
+  - TEST_TARGET=test_k*
+  - TEST_TARGET=test_l*
+  - TEST_TARGET=test_m*
+  - TEST_TARGET=test_n*
+  - TEST_TARGET=test_o*
+  - TEST_TARGET=test_p*
+  - TEST_TARGET=test_q*
+  - TEST_TARGET=test_r*
+  - TEST_TARGET=test_s*
+  - TEST_TARGET=test_t*
+  - TEST_TARGET=test_u*
+  - TEST_TARGET=test_v*
+  - TEST_TARGET=test_x*
+  - TEST_TARGET=test_y*
+  - TEST_TARGET=test_z*
 
 services:
 - docker
 
+before_install:
+- if [ -f $DOCKER_CACHE_FILE ]; then gunzip -c $DOCKER_CACHE_FILE | docker load; else docker pull ubuntu:16.04; fi
+
+install:
+- docker build -t $DOCKER_REPOSITORY:$TRAVIS_COMMIT .
+
 script:
-- docker run --rm emscripten/$TRAVIS_COMMIT python tests/runner.py $TEST_TARGET skip:ALL.test_time skip:ALL.test_sse1_full skip:ALL.test_sse2_full skip:ALL.test_sse3_full skip:ALL.test_ssse3_full skip:ALL.test_sse4_1_full
+- docker run $DOCKER_REPOSITORY:$TRAVIS_COMMIT python tests/runner.py $TEST_TARGET skip:ALL.test_time skip:ALL.test_sse1_full skip:ALL.test_sse2_full skip:ALL.test_sse3_full skip:ALL.test_ssse3_full skip:ALL.test_sse4_1_full
 
 jobs:
   include:
   - stage: build
     env: []
+    before_install: []
     script:
     - docker pull ubuntu:16.04
     - docker build -t emscripten/$TRAVIS_COMMIT .
+    - mkdir -p $(dirname $DOCKER_CACHE_FILE) ; docker save $(docker history -q $DOCKER_REPOSITORY:$TRAVIS_COMMIT | grep -v '<missing>') | gzip > $DOCKER_CACHE_FILE;
+    #- if [[ $TRAVIS_BRANCH == "incoming" ]] && [[ $TRAVIS_PULL_REQUEST == "false" ]]; then mkdir -p $(dirname $DOCKER_CACHE_FILE) ; docker save $(docker history -q $DOCKER_REPOSITORY:$TRAVIS_COMMIT | grep -v '<missing>') | gzip > $DOCKER_CACHE_FILE; fi
 
 stages:
   - build
