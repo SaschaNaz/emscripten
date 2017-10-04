@@ -2,7 +2,6 @@
 FROM ubuntu:16.04
 SHELL ["/bin/bash", "-c"]
 ENV DEBIAN_FRONTEND noninteractive
-COPY . /
 
 RUN apt-get update \
  && apt-get install -y python wget git cmake build-essential software-properties-common \
@@ -21,3 +20,5 @@ RUN apt-get update \
  && PATH=/:$PATH \
  && cd .. \
  && $(which emcc) --version
+
+COPY . /
