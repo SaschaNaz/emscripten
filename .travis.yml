@@ -2,41 +2,44 @@ sudo: required
 
 language: python
 
-env:
-- TEST_TARGET=test_a*
-- TEST_TARGET=test_b*
-- TEST_TARGET=test_c*
-- TEST_TARGET=test_d*
-- TEST_TARGET=test_e*
-- TEST_TARGET=test_f*
-- TEST_TARGET=test_g*
-- TEST_TARGET=test_h*
-- TEST_TARGET=test_i*
-- TEST_TARGET=test_j*
-- TEST_TARGET=test_k*
-- TEST_TARGET=test_l*
-- TEST_TARGET=test_m*
-- TEST_TARGET=test_n*
-- TEST_TARGET=test_o*
-- TEST_TARGET=test_p*
-- TEST_TARGET=test_q*
-- TEST_TARGET=test_r*
-- TEST_TARGET=test_s*
-- TEST_TARGET=test_t*
-- TEST_TARGET=test_u*
-- TEST_TARGET=test_v*
-- TEST_TARGET=test_x*
-- TEST_TARGET=test_y*
-- TEST_TARGET=test_z*
-
 services:
 - docker
 
-before_install:
-- docker pull ubuntu:16.04
-
-script:
-- docker build --build-arg TEST_TARGET=$TEST_TARGET .
+jobs:
+  include:
+  - stage: build docker image
+    script:
+    - docker pull ubuntu:16.04
+    - docker build -t emscripten/$TRAVIS_COMMIT .
+  - stage: test
+    env:
+    - TEST_TARGET=test_a*
+    - TEST_TARGET=test_b*
+    - TEST_TARGET=test_c*
+    - TEST_TARGET=test_d*
+    - TEST_TARGET=test_e*
+    - TEST_TARGET=test_f*
+    - TEST_TARGET=test_g*
+    - TEST_TARGET=test_h*
+    - TEST_TARGET=test_i*
+    - TEST_TARGET=test_j*
+    - TEST_TARGET=test_k*
+    - TEST_TARGET=test_l*
+    - TEST_TARGET=test_m*
+    - TEST_TARGET=test_n*
+    - TEST_TARGET=test_o*
+    - TEST_TARGET=test_p*
+    - TEST_TARGET=test_q*
+    - TEST_TARGET=test_r*
+    - TEST_TARGET=test_s*
+    - TEST_TARGET=test_t*
+    - TEST_TARGET=test_u*
+    - TEST_TARGET=test_v*
+    - TEST_TARGET=test_x*
+    - TEST_TARGET=test_y*
+    - TEST_TARGET=test_z*
+    script:
+    - docker run --rm emscripten/$TRAVIS_COMMIT python tests/runner.py $TEST_TARGET skip:ALL.test_time skip:ALL.test_sse1_full skip:ALL.test_sse2_full skip:ALL.test_sse3_full skip:ALL.test_ssse3_full skip:ALL.test_sse4_1_full
 
 notifications:
   email: false
