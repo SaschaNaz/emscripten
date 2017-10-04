@@ -32,7 +32,7 @@ env:
   - TEST_TARGET=test_v*
   - TEST_TARGET=test_x*
   - TEST_TARGET=test_y*
-- TEST_TARGET=test_z*
+  - TEST_TARGET=test_z*
 
 services:
 - docker
