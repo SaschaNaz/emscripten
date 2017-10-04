@@ -19,6 +19,6 @@ RUN apt-get update \
  && source ./emsdk_env.sh \
  && PATH=/:$PATH \
  && cd .. \
- && $(which emcc) --version
+ && emcc --version
 
 COPY . /
