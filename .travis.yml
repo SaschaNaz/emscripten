@@ -6,14 +6,15 @@ env:
 - TEST_TARGET=ALL.test_a*
 - TEST_TARGET=ALL.test_b*
 - TEST_TARGET=ALL.test_c*
-- TEST_TARGET=default.test_d*
-- TEST_TARGET=asm1.test_d*
-- TEST_TARGET=asm2.test_d*
-- TEST_TARGET=asm2f.test_d*
-- TEST_TARGET=asm2g.test_d*
-- TEST_TARGET=asm2i.test_d*
-- TEST_TARGET=asm2nn.test_d*
-- TEST_TARGET=asm3.test_d*
+- TEST_TARGET=ALL.test_d*
+# - TEST_TARGET=default.test_d*
+# - TEST_TARGET=asm1.test_d*
+# - TEST_TARGET=asm2.test_d*
+# - TEST_TARGET=asm2f.test_d*
+# - TEST_TARGET=asm2g.test_d*
+# - TEST_TARGET=asm2i.test_d*
+# - TEST_TARGET=asm2nn.test_d*
+# - TEST_TARGET=asm3.test_d*
 - TEST_TARGET=ALL.test_e*
 - TEST_TARGET=ALL.test_f*
 - TEST_TARGET=ALL.test_g*
@@ -25,14 +26,15 @@ env:
 - TEST_TARGET=ALL.test_m*
 - TEST_TARGET=ALL.test_n*
 - TEST_TARGET=ALL.test_o*
-- TEST_TARGET=default.test_p*
-- TEST_TARGET=asm1.test_p*
-- TEST_TARGET=asm2.test_p*
-- TEST_TARGET=asm2f.test_p*
-- TEST_TARGET=asm2g.test_p*
-- TEST_TARGET=asm2i.test_p*
-- TEST_TARGET=asm2nn.test_p*
-- TEST_TARGET=asm3.test_p*
+- TEST_TARGET=ALL.test_p*
+# - TEST_TARGET=default.test_p*
+# - TEST_TARGET=asm1.test_p*
+# - TEST_TARGET=asm2.test_p*
+# - TEST_TARGET=asm2f.test_p*
+# - TEST_TARGET=asm2g.test_p*
+# - TEST_TARGET=asm2i.test_p*
+# - TEST_TARGET=asm2nn.test_p*
+# - TEST_TARGET=asm3.test_p*
 - TEST_TARGET=ALL.test_q*
 - TEST_TARGET=ALL.test_r*
 - TEST_TARGET=ALL.test_s*
@@ -50,8 +52,12 @@ services:
 before_install:
 - docker pull ubuntu:16.04
 
+install:
+- docker build --build-arg -t emscripten:$TRAVIS_COMMIT .
+
 script:
-- docker build --build-arg TEST_TARGET=$TEST_TARGET .
+- docker run emscripten:$TRAVIS_COMMIT PATH=/:$PATH; emcc --version
+- docker run emscripten:$TRAVIS_COMMIT python tests/runner.py $TEST_TARGET skip:ALL.test_time skip:ALL.test_sse1_full skip:ALL.test_sse2_full skip:ALL.test_sse3_full skip:ALL.test_ssse3_full skip:ALL.test_sse4_1_full
 
 notifications:
   email: false
