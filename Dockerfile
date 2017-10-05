@@ -1,5 +1,6 @@
 # For travis
 FROM ubuntu:16.04
+SHELL ["/bin/bash", "-c"]
 ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt-get update \
