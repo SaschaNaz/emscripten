@@ -2,7 +2,6 @@
 FROM ubuntu:16.04
 SHELL ["/bin/bash", "-c"]
 ENV DEBIAN_FRONTEND noninteractive
-COPY . /
 
 RUN apt-get update \
  && apt-get install -y python python-pip wget git cmake build-essential software-properties-common \
@@ -20,9 +19,6 @@ RUN apt-get update \
  && ./emsdk install latest \
  && ./emsdk activate latest \
  && source ./emsdk_env.sh \
- && PATH=/:$PATH \
- && cd .. \
- && $(which emcc) --version
+ && echo ". emsdk-portable/emsdk_env.sh" > .profile
 
-ARG TEST_TARGET
-RUN python tests/runner.py $TEST_TARGET skip:ALL.test_time skip:ALL.test_sse1_full skip:ALL.test_sse2_full skip:ALL.test_sse3_full skip:ALL.test_ssse3_full skip:ALL.test_sse4_1_full
+COPY . /
