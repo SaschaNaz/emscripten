@@ -2,7 +2,6 @@
 FROM ubuntu:16.04
 SHELL ["/bin/bash", "-c"]
 ENV DEBIAN_FRONTEND noninteractive
-COPY . /
 
 RUN apt-get update \
  && apt-get install -y python python-pip wget git cmake build-essential software-properties-common \
@@ -19,4 +18,5 @@ RUN apt-get update \
  && ./emsdk update \
  && ./emsdk install latest \
  && ./emsdk activate latest \
- && source ./emsdk_env.sh
+ && source ./emsdk_env.sh \
+ && echo ". emsdk-portable/emsdk_env.sh" > .profile
