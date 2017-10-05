@@ -58,6 +58,7 @@ install:
 script:
 - docker create --name emscripten emscripten:$TRAVIS_COMMIT
 - docker cp . emscripten:/
+- docker start
 - docker exec emscripten --env 'PATH=/:$PATH' emcc --version; python tests/runner.py $TEST_TARGET skip:ALL.test_time skip:ALL.test_sse1_full skip:ALL.test_sse2_full skip:ALL.test_sse3_full skip:ALL.test_ssse3_full skip:ALL.test_sse4_1_full
 
 notifications:
