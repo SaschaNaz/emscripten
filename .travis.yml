@@ -48,7 +48,7 @@ services:
 - docker
 
 before_install:
-- docker pull ubuntu:16.04
+- docker pull saschanaz/emscripten:latest
 
 script:
 - docker build --build-arg TEST_TARGET=$TEST_TARGET .
