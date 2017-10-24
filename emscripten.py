@@ -2134,8 +2134,8 @@ def main(args, compiler_engine, cache, temp_files, DEBUG):
   for setting in args.settings:
     name, value = setting.strip().split('=', 1)
     value = json.loads(value)
-    if isinstance(value, unicode):
-      value = value.encode('utf8')
+    if isinstance(value, bytes):
+      value = value.decode('utf8')
     settings[name] = value
 
   # libraries
@@ -2228,7 +2228,7 @@ WARNING: You should normally never use this! Use emcc instead.
   if len(positional) != 1:
     raise RuntimeError('Must provide exactly one positional argument. Got ' + str(len(positional)) + ': "' + '", "'.join(positional) + '"')
   keywords.infile = os.path.abspath(positional[0])
-  if isinstance(keywords.outfile, basestring):
+  if isinstance(keywords.outfile, (type(b''), type(u''))):
     keywords.outfile = open(keywords.outfile, 'w', encoding='utf-8')
 
   if keywords.temp_dir is None:
