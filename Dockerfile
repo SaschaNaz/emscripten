@@ -5,7 +5,7 @@ ENV DEBIAN_FRONTEND noninteractive
 RUN mkdir -p /root/emscripten/
 COPY . /root/emscripten/
 
-RUN apt-get install -y lspci \
+RUN apt-get install -y pciutils \
  && lspci -vnn | grep VGA -A 12
 # RUN cd /root/ \
 #  && apt-get update \
