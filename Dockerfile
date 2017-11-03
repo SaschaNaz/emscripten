@@ -5,9 +5,7 @@ ENV DEBIAN_FRONTEND noninteractive
 RUN mkdir -p /root/emscripten/
 COPY . /root/emscripten/
 
-RUN apt-get update \
- && apt-get install -y mesa-utils \
- && glxinfo
+RUN lspci -vnn | grep VGA -A 12
 # RUN cd /root/ \
 #  && apt-get update \
 #  && apt-get install -y python python-pip cmake build-essential openjdk-9-jre-headless \
