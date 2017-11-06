@@ -8,7 +8,7 @@ Simple test runner. Consider using parallel_test_core.py for faster iteration ti
 # XXX Use EM_ALL_ENGINES=1 in the env to test all engines!
 
 
-from __future__ import print_function
+from __future__ import print_function, unicode_literals
 from subprocess import Popen, PIPE, STDOUT
 import os, unittest, tempfile, shutil, time, inspect, sys, math, glob, re, difflib
 import webbrowser, hashlib, threading, platform
@@ -16,6 +16,7 @@ import multiprocessing, functools, stat, string, random, fnmatch
 import atexit
 import operator
 import parallel_runner
+from io import open
 
 if sys.version_info.major == 2:
   from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
@@ -303,8 +304,8 @@ class RunnerCore(unittest.TestCase):
 
     # Copy over necessary files for compiling the source
     if main_file is None:
-      f = open(filename, 'w')
-      f.write(src)
+      f = open(filename, 'w', encoding='utf-8')
+      f.write(src.decode('utf-8') if isinstance(src, bytes) else src)
       f.close()
       final_additional_files = []
       for f in additional_files:
@@ -376,7 +377,7 @@ class RunnerCore(unittest.TestCase):
       output_processor(open(filename + '.o.js').read())
 
     if self.emcc_args is not None and js_outfile:
-      src = open(filename + '.o.js').read()
+      src = open(filename + '.o.js', encoding='utf-8').read()
       if self.uses_memory_init_file():
         # side memory init file, or an empty one in the js
         assert ('/* memory initializer */' not in src) or ('/* memory initializer */ allocate([]' in src)
@@ -446,8 +447,8 @@ class RunnerCore(unittest.TestCase):
     run_js(filename, engine, args, check_timeout, stdout=open(stdout, 'w'), stderr=open(stderr, 'w'), assert_returncode=assert_returncode)
     if cwd is not None:
       os.chdir(cwd)
-    out = open(stdout, 'r').read()
-    err = open(stderr, 'r').read()
+    out = open(stdout, 'r', encoding='utf-8').read()
+    err = open(stderr, 'r', encoding='utf-8').read()
     if engine == SPIDERMONKEY_ENGINE and Settings.ASM_JS == 1:
       err = self.validate_asmjs(err)
     if output_nicerizer:
@@ -466,7 +467,7 @@ class RunnerCore(unittest.TestCase):
       print("Output: " + output[0])
 
   def run_native(self, filename, args):
-    process = Popen([filename+'.native'] + args, stdout=PIPE);
+    process = Popen([filename+'.native'] + args, stdout=PIPE)
     output = process.communicate()
     if process.returncode is not 0:
       print("Running native executable with command '%s' failed with a return code %d!" % (' '.join([filename+'.native'] + args), process.returncode), file=sys.stderr)
@@ -502,7 +503,7 @@ class RunnerCore(unittest.TestCase):
   def assertContained(self, values, string, additional_info=''):
     if type(values) not in [list, tuple]: values = [values]
     for value in values:
-      if not isinstance(value, bytes): string = string.decode('UTF-8') # If we have any non-ASCII chars in the expected string, treat the test string from ASCII as UTF8 as well.
+      if type(string) is bytes: string = string.encode('UTF-8') # If we have any non-ASCII chars in the expected string, treat the test string from ASCII as UTF8 as well.
       if callable(string): string = string()
       if value in string: return # success
     raise Exception("Expected to find '%s' in '%s', diff:\n\n%s\n%s" % (
@@ -637,7 +638,7 @@ class RunnerCore(unittest.TestCase):
                        js_engines=None, post_build=None, basename='src.cpp',
                        libraries=[], includes=[], force_c=False, build_ll_hook=None,
                        extra_emscripten_args=[], assert_returncode=None, assert_identical=False):
-    self.do_run(open(src).read(), open(expected_output).read(),
+    self.do_run(open(src, encoding='utf-8').read(), open(expected_output, encoding='utf-8').read(),
                 args, output_nicerizer, output_processor, no_build, main_file,
                 additional_files, js_engines, post_build, basename, libraries,
                 includes, force_c, build_ll_hook, extra_emscripten_args,
@@ -672,10 +673,9 @@ class RunnerCore(unittest.TestCase):
     for engine in js_engines:
       #print 'test in', engine
       js_output = self.run_generated_code(engine, filename + '.o.js', args, output_nicerizer=output_nicerizer, assert_returncode=assert_returncode)
-      js_output = js_output.replace('\r\n', '\n')
       try:
         if assert_identical:
-          self.assertIdentical(expected_output, js_output)
+          self.assertTextDataIdentical(expected_output, js_output)
         else:
           self.assertContained(expected_output, js_output)
           self.assertNotContained('ERROR', js_output)
