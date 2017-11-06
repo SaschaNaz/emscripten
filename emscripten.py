@@ -9,6 +9,7 @@ header files (so that the JS compiler can see the constants in those
 headers, for the libc implementation in JS).
 '''
 
+from __future__ import unicode_literals
 from tools.toolchain_profiler import ToolchainProfiler
 if __name__ == '__main__':
   ToolchainProfiler.record_process_start()
@@ -21,6 +22,7 @@ from tools import shared
 from tools import jsrun, cache as cache_module, tempfiles
 from tools.response_file import read_response_file
 from tools.shared import WINDOWS
+from io import open
 
 __rootpath__ = os.path.abspath(os.path.dirname(__file__))
 def path_from_root(*pathelems):
@@ -124,7 +126,7 @@ def compile_js(infile, settings, temp_files, DEBUG):
       logging.debug('  emscript: llvm backend took %s seconds' % (time.time() - t))
 
     # Split up output
-    backend_output = open(temp_js).read()
+    backend_output = open(temp_js, encoding='utf-8').read()
     #if DEBUG: print >> sys.stderr, backend_output
   return backend_output
 
@@ -412,7 +414,7 @@ def write_cyberdwarf_data(outfile, metadata, settings):
     assert('cyberdwarf_data' in metadata)
     cd_file_name = outfile.name + ".cd"
     with open(cd_file_name, "w") as cd_file:
-      json.dump({ 'cyberdwarf': metadata['cyberdwarf_data'] }, cd_file)
+      cd_file.write(json.dumps({ 'cyberdwarf': metadata['cyberdwarf_data'] }, ensure_ascii=False))
 
 
 def create_backend_args(infile, temp_js, settings):
@@ -524,6 +526,8 @@ def compile_settings(compiler_engine, settings, libraries, temp_files):
     def save_settings():
       global settings_text
       settings_text = json.dumps(settings, sort_keys=True)
+      if (isinstance(settings_text, bytes)):
+        settings_text = settings_text.decode()
       s = open(settings_file, 'w')
       s.write(settings_text)
       s.close()
@@ -611,7 +615,7 @@ def is_already_implemented(requested, pre, all_implemented):
   is_implemented = requested in all_implemented
   # special-case malloc, EXPORTED by default for internal use, but we bake in a trivial allocator and warn at runtime if used in ASSERTIONS
   is_exception = requested == '_malloc'
-  in_pre = ('function ' + requested.encode('utf-8')) in pre
+  in_pre = ('function ' + requested) in pre
   return is_implemented or is_exception or in_pre
 
 def get_exported_implemented_functions(all_exported_functions, all_implemented, metadata, settings):
@@ -655,7 +659,7 @@ def include_asm_consts(pre, forwarded_json, metadata, settings):
     asm_const_funcs.append(r'''
 function _emscripten_asm_const_%s(%s) {
   return ASM_CONSTS[code](%s);
-}''' % (sig.encode('utf-8'), ', '.join(all_args), ', '.join(args)))
+}''' % (sig, ', '.join(all_args), ', '.join(args)))
 
   asm_consts_text = '\nvar ASM_CONSTS = [' + ',\n '.join(asm_consts) + '];\n'
   asm_funcs_text = '\n'.join(asm_const_funcs) + '\n'
@@ -690,7 +694,7 @@ def all_asm_consts(metadata):
   asm_consts = [0]*len(metadata['asmConsts'])
   all_sigs = []
   for k, v in metadata['asmConsts'].items():
-    const = v[0].encode('utf-8')
+    const = v[0]
     sigs = v[1]
     const = trim_asm_const_body(const)
     const = '{ ' + const + ' }'
@@ -1847,7 +1851,7 @@ def create_exported_implemented_functions_wasm(pre, forwarded_json, metadata, se
       # special-case malloc, EXPORTED by default for internal use, but we bake in a trivial allocator and warn at runtime if used in ASSERTIONS \
       if requested not in all_implemented and \
          requested != '_malloc' and \
-         (('function ' + requested.encode('utf-8')) not in pre): # could be a js library func
+         (('function ' + requested) not in pre): # could be a js library func
         logging.warning('function requested to be exported, but not implemented: "%s"', requested)
 
   return exported_implemented_functions
@@ -1856,7 +1860,7 @@ def create_asm_consts_wasm(forwarded_json, metadata):
   asm_consts = [0]*len(metadata['asmConsts'])
   all_sigs = []
   for k, v in metadata['asmConsts'].items():
-    const = v[0].encode('utf-8')
+    const = v[0]
     sigs = v[1]
     const = trim_asm_const_body(const)
     const = '{ ' + const + ' }'
@@ -1876,7 +1880,7 @@ def create_asm_consts_wasm(forwarded_json, metadata):
     asm_const_funcs.append(r'''
 function _emscripten_asm_const_%s(%s) {
 return ASM_CONSTS[code](%s);
-}''' % (sig.encode('utf-8'), ', '.join(all_args), ', '.join(args)))
+}''' % (sig, ', '.join(all_args), ', '.join(args)))
 
   return asm_consts, asm_const_funcs
 
@@ -2225,7 +2229,7 @@ WARNING: You should normally never use this! Use emcc instead.
     raise RuntimeError('Must provide exactly one positional argument. Got ' + str(len(positional)) + ': "' + '", "'.join(positional) + '"')
   keywords.infile = os.path.abspath(positional[0])
   if isinstance(keywords.outfile, basestring):
-    keywords.outfile = open(keywords.outfile, 'w')
+    keywords.outfile = open(keywords.outfile, 'w', encoding='utf-8')
 
   if keywords.temp_dir is None:
     temp_files = get_configuration().get_temp_files()

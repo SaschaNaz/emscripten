@@ -390,7 +390,7 @@ EMSCRIPTEN_FUNCS();
       # Restore a comment for Closure Compiler
       asm_open_bracket = asm_shell_pre.find('(')
       asm_shell_pre = asm_shell_pre[:asm_open_bracket+1] + '/** @suppress {uselessCode} */' + asm_shell_pre[asm_open_bracket+1:]
-      asm_shell_post = asm_shell_post.replace('});', '})');
+      asm_shell_post = asm_shell_post.replace('});', '})')
       pre += asm_shell_pre + '\n' + start_funcs_marker
       post = end_funcs_marker + asm_shell_post + post
 
@@ -526,7 +526,7 @@ EMSCRIPTEN_FUNCS();
   with ToolchainProfiler.profile_block('write_pre'):
     filename += '.jo.js'
     f = open(filename, 'w')
-    f.write(pre);
+    f.write(pre)
     pre = None
 
   with ToolchainProfiler.profile_block('sort_or_concat'):

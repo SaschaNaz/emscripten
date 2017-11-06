@@ -1,12 +1,13 @@
 # coding=utf-8
 
-from __future__ import print_function
+from __future__ import print_function, unicode_literals
 import glob, hashlib, os, re, shutil, subprocess, sys, json, random
 from textwrap import dedent
 import tools.shared
 from tools.shared import *
 from tools.line_endings import check_line_endings
 from runner import RunnerCore, path_from_root, checked_sanity, test_modes, get_zlib_library, get_bullet_library
+from io import open
 
 # decorators for limiting which modes a test can run in
 
@@ -2691,7 +2692,7 @@ def process(filename):
     self.prep_dlfcn_main()
 
     def post(filename):
-      with open(filename) as f:
+      with open(filename, encoding='utf-8') as f:
         for line in f:
           if 'var NAMED_GLOBALS' in line:
             table = line
@@ -4196,7 +4197,7 @@ def process(filename):
         printf("*%d\n", c);
       }
     '''
-    open('file_with_byte_234.txt', 'wb').write('\xea')
+    open('file_with_byte_234.txt', 'wb').write(b'\xea')
     self.emcc_args += ['--embed-file', 'file_with_byte_234.txt']
     self.do_run(src, '*234\n')
 
@@ -5415,9 +5416,9 @@ def process(filename):
                       #define LONGDOUBLE_TYPE double
                       #define SQLITE_INT64_TYPE long long int
                       #define SQLITE_THREADSAFE 0
-                 ''' + open(path_from_root('tests', 'sqlite', 'sqlite3.c'), 'r').read() +
-                       open(path_from_root('tests', 'sqlite', 'benchmark.c'), 'r').read(),
-                 open(path_from_root('tests', 'sqlite', 'benchmark.txt'), 'r').read(),
+                 ''' + open(path_from_root('tests', 'sqlite', 'sqlite3.c'), 'r', encoding='utf-8').read() +
+                       open(path_from_root('tests', 'sqlite', 'benchmark.c'), 'r', encoding='utf-8').read(),
+                 open(path_from_root('tests', 'sqlite', 'benchmark.txt'), 'r', encoding='utf-8').read(),
                  includes=[path_from_root('tests', 'sqlite')],
                  force_c=True)
 
@@ -5496,7 +5497,7 @@ def process(filename):
 
       # See post(), below
       input_file = open(os.path.join(self.get_dir(), 'paper.pdf.js'), 'w')
-      input_file.write(str(list(map(ord, open(path_from_root('tests', 'poppler', 'paper.pdf'), 'rb').read()))))
+      input_file.write('%s' % list(bytearray(open(path_from_root('tests', 'poppler', 'paper.pdf'), 'rb').read())))
       input_file.close()
 
       post = '''
@@ -5530,7 +5531,7 @@ def process(filename):
       Building.link(poppler + freetype, combined)
 
       self.do_ll_run(combined,
-                     list(map(ord, open(path_from_root('tests', 'poppler', 'ref.ppm'), 'r').read())).__str__().replace(' ', ''),
+                     ('%s' % list(bytearray(open(path_from_root('tests', 'poppler', 'ref.ppm'), 'rb').read()))).replace(' ', ''),
                      args='-scale-to 512 paper.pdf filename'.split(' '),
                      post_build=post)
                      #, build_ll_hook=self.do_autodebug)
@@ -5760,7 +5761,7 @@ def process(filename):
         print("Testing case '%s'..." % shortname, file=sys.stderr)
         output_file = path_from_root('tests', 'cases', shortname + '.txt')
         if os.path.exists(output_file):
-          output = open(output_file, 'r').read()
+          output = open(output_file, 'r', encoding='utf-8').read()
         else:
           output = 'hello, world!'
         if output.rstrip() != 'skip':
@@ -7446,7 +7447,7 @@ def make_run(fullname, name=-1, compiler=-1, embetter=0, quantum_size=0,
 
   if env is None: env = {}
 
-  TT = type(fullname, (T,), dict(run_name = fullname, env = env))
+  TT = type(str(fullname), (T,), dict(run_name = fullname, env = env))
 
   def tearDown(self):
     try:
