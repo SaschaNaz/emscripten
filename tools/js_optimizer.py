@@ -252,9 +252,9 @@ class Minifier(object):
           (['--debug'] if source_map else []),
           stdout=subprocess.PIPE).communicate()[0]
 
-    assert len(output) > 0 and not output.startswith('Assertion failed'), 'Error in js optimizer: ' + output
+    assert len(output) > 0 and not output.startswith(b'Assertion failed'), 'Error in js optimizer: ' + output
     #print >> sys.stderr, "minified SHELL 3333333333333333", output, "\n44444444444444444444"
-    code, metadata = output.split('// EXTRA_INFO:')
+    code, metadata = output.split(b'// EXTRA_INFO:')
     self.globs = json.loads(metadata)
 
     if self.symbols_file:
