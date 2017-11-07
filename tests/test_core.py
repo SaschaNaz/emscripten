@@ -5811,7 +5811,7 @@ def process(filename):
   def do_autodebug(self, filename):
     Building.llvm_dis(filename)
     output = Popen([PYTHON, AUTODEBUGGER, filename+'.o.ll', filename+'.o.ll.ll'], stdout=PIPE, stderr=self.stderr_redirect).communicate()[0]
-    assert 'Success.' in output, output
+    assert b'Success.' in output, output
     self.prep_ll_run(filename, filename+'.o.ll.ll', force_recompile=True) # rebuild .bc # TODO: use code in do_autodebug_post for this
 
   # Autodebug the code, after LLVM opts. Will only work once!
@@ -5823,7 +5823,7 @@ def process(filename):
     print('Autodebugging during post time')
     delattr(self, 'post')
     output = Popen([PYTHON, AUTODEBUGGER, filename+'.o.ll', filename+'.o.ll.ll'], stdout=PIPE, stderr=self.stderr_redirect).communicate()[0]
-    assert 'Success.' in output, output
+    assert b'Success.' in output, output
     shutil.copyfile(filename + '.o.ll.ll', filename + '.o.ll')
     Building.llvm_as(filename)
     Building.llvm_dis(filename)

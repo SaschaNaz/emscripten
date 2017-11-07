@@ -4,6 +4,7 @@
 # It also tells emcc.py that we want C++ and not C by default
 
 from tools.toolchain_profiler import ToolchainProfiler
+from tools import shared
 
 import sys
 
@@ -18,4 +19,4 @@ if sys.version_info.major == 2:
 else:
   import os, subprocess
   if __name__ == '__main__':
-    sys.exit(subprocess.call(['python2', os.path.join(os.path.dirname(os.path.realpath(__file__)), 'emcc.py')] + sys.argv[1:]))
+    sys.exit(subprocess.call([shared.PYTHON, os.path.join(os.path.dirname(os.path.realpath(__file__)), 'emcc.py')] + sys.argv[1:]))
