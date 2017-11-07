@@ -23,7 +23,7 @@ emcc can be influenced by a few environment variables:
   EMMAKEN_COMPILER - The compiler to be used, if you don't want the default clang.
 '''
 
-from __future__ import print_function
+from __future__ import print_function, unicode_literals
 from tools.toolchain_profiler import ToolchainProfiler, exit
 if __name__ == '__main__':
   ToolchainProfiler.record_process_start()
@@ -34,6 +34,7 @@ from tools import shared, jsrun, system_libs
 from tools.shared import execute, suffix, unsuffixed, unsuffixed_basename, WINDOWS, safe_move
 from tools.response_file import read_response_file
 import tools.line_endings
+from io import open
 
 # endings = dot + a suffix, safe to test by  filename.endswith(endings)
 C_ENDINGS = ('.c', '.C', '.i')
@@ -347,7 +348,7 @@ emcc: supported targets: llvm bitcode, javascript, NOT elf
     here = os.getcwd()
     os.chdir(shared.path_from_root())
     try:
-      revision = execute(['git', 'show'], stdout=PIPE, stderr=PIPE)[0].split('\n')[0]
+      revision = execute(['git', 'show'], stdout=PIPE, stderr=PIPE)[0].split(b'\n')[0].decode()
     except:
       pass
     finally:
@@ -470,7 +471,7 @@ There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR P
       exit(subprocess.call(cmd))
     else:
       only_object = '-c' in cmd
-      for i in reversed(list(range(len(cmd)-1))): # Last -o directive should take precedence, if multiple are specified
+      for i in reversed(range(len(cmd)-1)): # Last -o directive should take precedence, if multiple are specified
         if cmd[i] == '-o':
           if not only_object:
             cmd[i+1] += '.js'
@@ -682,7 +683,7 @@ There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR P
             settings_changes.append(key)
             newargs[i] = newargs[i+1] = ''
             assert key != 'WASM_BACKEND', 'do not set -s WASM_BACKEND, instead set EMCC_WASM_BACKEND=1 in the environment'
-      newargs = [arg for arg in newargs if arg is not '']
+      newargs = [arg for arg in newargs if len(arg) > 0]
 
       # Find input files
 
@@ -1608,7 +1609,7 @@ There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR P
       # Apply pre and postjs files
       if options.pre_js or options.post_module or options.post_js:
         logging.debug('applying pre/postjses')
-        src = open(final).read()
+        src = open(final, encoding='utf-8').read()
         if options.post_module:
           src = src.replace('// {{PREAMBLE_ADDITIONS}}', options.post_module + '\n// {{PREAMBLE_ADDITIONS}}')
         final += '.pp.js'
@@ -1617,7 +1618,7 @@ There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR P
             options.pre_js = options.pre_js.replace('\r\n', '\n')
           if options.post_js:
             options.post_js = options.post_js.replace('\r\n', '\n')
-        outfile = open(final, 'w')
+        outfile = open(final, 'w', encoding='utf-8')
         outfile.write(options.pre_js)
         outfile.write(src) # this may be large, don't join it to others
         outfile.write(options.post_js)
@@ -1664,8 +1665,8 @@ There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR P
             return 'memoryInitializer = "%s";' % shared.JS.get_subresource_location(memfile, embed_memfile(options))
           else:
             return 'memoryInitializer = null;'
-        src = re.sub(shared.JS.memory_initializer_pattern, repl, open(final).read(), count=1)
-        open(final + '.mem.js', 'w').write(src)
+        src = re.sub(shared.JS.memory_initializer_pattern, repl, open(final, encoding='utf-8').read(), count=1)
+        open(final + '.mem.js', 'w', encoding='utf-8').write(src)
         final += '.mem.js'
         src = None
         js_transform_tempfiles[-1] = final # simple text substitution preserves comment line number mappings
