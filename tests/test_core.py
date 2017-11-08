@@ -2294,7 +2294,7 @@ The current type of b is: 9
     shutil.move(self.in_dir('supp.cpp.o.js'), self.in_dir('liblib.so'))
     Settings.BUILD_AS_SHARED_LIB = 0
 
-    Settings.RUNTIME_LINKED_LIBS = ['liblib.so'];
+    Settings.RUNTIME_LINKED_LIBS = ['liblib.so']
     self.do_run(main, 'supp: 54,2\nmain: 56\nsupp see: 543\nmain see: 76\nok.')
 
   def can_dlfcn(self):

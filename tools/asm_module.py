@@ -248,7 +248,7 @@ class AsmModule():
       main.post_js = main.post_js[:position] + ''.join(list(new_module_defs)) + '\n' + main.post_js[position:]
 
   def write(self, out):
-    f = open(out, 'w')
+    f = open(out, 'w', encoding='utf-8')
     f.write(self.pre_js)
     f.write(self.pre_imports_js)
     f.write(self.imports_js)
