@@ -2314,11 +2314,11 @@ The current type of b is: 9
 
   dlfcn_post_build = '''
 def process(filename):
-  src = open(filename, 'r', encoding='utf-8').read().replace(
-    '// {{PRE_RUN_ADDITIONS}}',
-    "FS.createDataFile('/', 'liblib.so', " + str(list(bytearray(open('liblib.so', 'rb').read()))) + ", true, false, false);"
+  src = open(filename, 'rb').read().replace(
+    b'// {{PRE_RUN_ADDITIONS}}',
+    b"FS.createDataFile('/', 'liblib.so', " + bytes(list(bytearray(open('liblib.so', 'rb').read()))) + b", true, false, false);"
   )
-  open(filename, 'w').write(src)
+  open(filename, 'wb').write(src)
 '''
 
   def build_dlfcn_lib(self, lib_src, dirname, filename):
@@ -4077,7 +4077,7 @@ Pass: 0.000012 0.000012''')
 
     post = '''
 def process(filename):
-  src = \'\'\'
+  src = b\'\'\'
     var Module = {
       'noFSInit': true,
       'preRun': function() {
@@ -4091,8 +4091,8 @@ def process(filename):
         });
       }
     };
-  \'\'\' + open(filename, 'r').read()
-  open(filename, 'w').write(src)
+  \'\'\' + open(filename, 'rb').read()
+  open(filename, 'wb').write(src)
 '''
     other = open(os.path.join(self.get_dir(), 'test.file'), 'w')
     other.write('some data')
@@ -4121,14 +4121,14 @@ def process(filename):
 
     post = '''
 def process(filename):
-  src = \'\'\'
+  src = b\'\'\'
     var Module = {
       data: [10, 20, 40, 30],
       stdin: function() { return Module.data.pop() || null },
       stdout: function(x) { Module.print('got: ' + x) }
     };
-  \'\'\' + open(filename, 'r').read()
-  open(filename, 'w').write(src)
+  \'\'\' + open(filename, 'rb').read()
+  open(filename, 'wb').write(src)
 '''
     src = r'''
       #include <stdio.h>
@@ -4328,11 +4328,11 @@ name: .
   def test_fcntl(self):
     add_pre_run = '''
 def process(filename):
-  src = open(filename, 'r').read().replace(
-    '// {{PRE_RUN_ADDITIONS}}',
-    "FS.createDataFile('/', 'test', 'abcdef', true, true, false);"
+  src = open(filename, 'rb').read().replace(
+    b'// {{PRE_RUN_ADDITIONS}}',
+    b"FS.createDataFile('/', 'test', 'abcdef', true, true, false);"
   )
-  open(filename, 'w').write(src)
+  open(filename, 'wb').write(src)
 '''
     src = open(path_from_root('tests', 'fcntl', 'src.c'), 'r').read()
     expected = open(path_from_root('tests', 'fcntl', 'output.txt'), 'r').read()
@@ -4346,11 +4346,11 @@ def process(filename):
   def test_fcntl_misc(self):
     add_pre_run = '''
 def process(filename):
-  src = open(filename, 'r').read().replace(
-    '// {{PRE_RUN_ADDITIONS}}',
-    "FS.createDataFile('/', 'test', 'abcdef', true, true, false);"
+  src = open(filename, 'rb').read().replace(
+    b'// {{PRE_RUN_ADDITIONS}}',
+    b"FS.createDataFile('/', 'test', 'abcdef', true, true, false);"
   )
-  open(filename, 'w').write(src)
+  open(filename, 'wb').write(src)
 '''
     src = open(path_from_root('tests', 'fcntl-misc', 'src.c'), 'r').read()
     expected = open(path_from_root('tests', 'fcntl-misc', 'output.txt'), 'r').read()
@@ -4359,9 +4359,9 @@ def process(filename):
   def test_poll(self):
     add_pre_run = '''
 def process(filename):
-  src = open(filename, 'r').read().replace(
-    '// {{PRE_RUN_ADDITIONS}}',
-    \'\'\'
+  src = open(filename, 'rb').read().replace(
+    b'// {{PRE_RUN_ADDITIONS}}',
+    b\'\'\'
       var dummy_device = FS.makedev(64, 0);
       FS.registerDevice(dummy_device, {});
 
@@ -4369,7 +4369,7 @@ def process(filename):
       FS.mkdev('/device', dummy_device);
     \'\'\'
   )
-  open(filename, 'w').write(src)
+  open(filename, 'wb').write(src)
 '''
     test_path = path_from_root('tests', 'core', 'test_poll')
     src, output = (test_path + s for s in ('.c', '.out'))
@@ -4442,10 +4442,10 @@ def process(filename):
       addJS = '''
 def process(filename):
   import tools.shared as shared
-  src = open(filename, 'r').read().replace('FS.init();', '').replace( # Disable normal initialization, replace with ours
-    '// {{PRE_RUN_ADDITIONS}}',
-    open(shared.path_from_root('tests', 'filesystem', 'src.js'), 'r').read())
-  open(filename, 'w').write(src)
+  src = open(filename, 'rb').read().replace(b'FS.init();', b'').replace( # Disable normal initialization, replace with ours
+    b'// {{PRE_RUN_ADDITIONS}}',
+    open(shared.path_from_root('tests', 'filesystem', 'src.js'), 'rb').read())
+  open(filename, 'wb').write(src)
 '''
       src = 'int main() {return 0;}\n'
       expected = open(path_from_root('tests', 'filesystem', 'output.txt'), 'r').read()
@@ -5349,13 +5349,13 @@ return malloc(size);
 def process(filename):
   import tools.shared as shared
   # Embed the font into the document
-  src = open(filename, 'r').read().replace(
-    '// {{PRE_RUN_ADDITIONS}}',
-    "FS.createDataFile('/', 'font.ttf', %s, true, false, false);" % str(
-      map(ord, open(shared.path_from_root('tests', 'freetype', 'LiberationSansBold.ttf'), 'rb').read())
+  src = open(filename, 'rb').read().replace(
+    b'// {{PRE_RUN_ADDITIONS}}',
+    b"FS.createDataFile('/', 'font.ttf', %s, true, false, false);" % bytes(
+      bytearray(open(shared.path_from_root('tests', 'freetype', 'LiberationSansBold.ttf'), 'rb').read())
     )
   )
-  open(filename, 'w').write(src)
+  open(filename, 'wb').write(src)
 '''
 
     # Not needed for js, but useful for debugging
@@ -5560,16 +5560,16 @@ def process(filename):
 def process(filename):
   import tools.shared as shared
   original_j2k = shared.path_from_root('tests', 'openjpeg', 'syntensity_lobby_s.j2k')
-  src = open(filename, 'r').read().replace(
-    '// {{PRE_RUN_ADDITIONS}}',
-    "FS.createDataFile('/', 'image.j2k', %s, true, false, false);" % shared.line_splitter(str(
-      map(ord, open(original_j2k, 'rb').read())
+  src = open(filename, 'rb').read().replace(
+    b'// {{PRE_RUN_ADDITIONS}}',
+    b"FS.createDataFile('/', 'image.j2k', %s, true, false, false);" % shared.line_splitter(bytes(
+      bytearray(open(original_j2k, 'rb').read())
     ))
   ).replace(
-    '// {{POST_RUN_ADDITIONS}}',
-    "Module.print('Data: ' + JSON.stringify(MEMFS.getFileDataAsRegularArray(FS.analyzePath('image.raw').object)));"
+    b'// {{POST_RUN_ADDITIONS}}',
+    b"Module.print('Data: ' + JSON.stringify(MEMFS.getFileDataAsRegularArray(FS.analyzePath('image.raw').object)));"
   )
-  open(filename, 'w').write(src)
+  open(filename, 'wb').write(src)
 '''
 
     shutil.copy(path_from_root('tests', 'openjpeg', 'opj_config.h'), self.get_dir())
@@ -5867,7 +5867,7 @@ def process(filename):
   def test_ccall(self):
     post = '''
 def process(filename):
-  src = open(filename, 'r').read() + \'\'\'
+  src = open(filename, 'rb').read() + b\'\'\'
       Module.print('*');
       var ret;
       ret = Module['ccall']('get_int', 'number'); Module.print([typeof ret, ret].join(','));
@@ -5897,7 +5897,7 @@ def process(filename):
       Module.print('stack is ok.');
       ccall('call_ccall_again', null);
   \'\'\'
-  open(filename, 'w').write(src)
+  open(filename, 'wb').write(src)
 '''
 
     Settings.EXPORTED_FUNCTIONS += ['_get_int', '_get_float', '_get_string', '_print_int', '_print_float', '_print_string', '_multi', '_pointer', '_call_ccall_again', '_malloc']
@@ -6507,12 +6507,12 @@ someweirdtext
 def process(filename):
   Popen([PYTHON, DEMANGLER, filename], stdout=open(filename + '.tmp', 'w')).communicate()
   Popen([PYTHON, NAMESPACER, filename, filename + '.tmp'], stdout=open(filename + '.tmp2', 'w')).communicate()
-  src = open(filename, 'r').read().replace(
-    '// {{MODULE_ADDITIONS}',
-    'Module["_"] = ' + open(filename + '.tmp2', 'r').read().replace('var ModuleNames = ', '').rstrip() + ';\n\n' + script_src + '\n\n' +
-      '// {{MODULE_ADDITIONS}'
+  src = open(filename, 'rb').read().replace(
+    b'// {{MODULE_ADDITIONS}',
+    b'Module["_"] = ' + open(filename + '.tmp2', 'r').read().replace('var ModuleNames = ', '').rstrip() + b';\n\n' + script_src + b'\n\n' +
+      b'// {{MODULE_ADDITIONS}'
   )
-  open(filename, 'w').write(src)
+  open(filename, 'wb').write(src)
 '''
       # XXX disable due to possible v8 bug -- self.do_run(src, '*166*\n*ok*', post_build=post)
 
