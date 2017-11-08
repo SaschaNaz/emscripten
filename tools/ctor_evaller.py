@@ -310,7 +310,7 @@ if __name__ == '__main__':
     shared.logging.debug('ctor_evaller: no ctors')
     sys.exit(0)
 
-  ctors_text = js[ctors_start:ctors_end];
+  ctors_text = js[ctors_start:ctors_end]
   if ctors_text.count('(') == 1:
     shared.logging.debug('ctor_evaller: push, but no ctors')
     sys.exit(0)
@@ -322,7 +322,7 @@ if __name__ == '__main__':
     # js path
     mem_init_file = binary_file
     if os.path.exists(mem_init_file):
-      mem_init = json.dumps(list(bytearray(open(mem_init_file, 'rb').read())))
+      mem_init = bytes(list(bytearray(open(mem_init_file, 'rb').read())))
     else:
       mem_init = []
 
