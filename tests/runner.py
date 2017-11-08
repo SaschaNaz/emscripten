@@ -505,10 +505,10 @@ class RunnerCore(unittest.TestCase):
 
   def assertContained(self, values, string, additional_info=''):
     if type(values) not in [list, tuple]: values = [values]
+    if callable(string): string = string()
+    if type(string) is bytes: string = string.decode()
     for value in values:
-      if callable(string): string = string()
       if type(value) is bytes: value = value.decode()
-      if type(string) is bytes: string = string.decode()
       if value in string: return # success
     raise Exception("Expected to find '%s' in '%s', diff:\n\n%s\n%s" % (
       limit_size(values[0]), limit_size(string),
