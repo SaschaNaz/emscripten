@@ -45,6 +45,8 @@ def run():
             full_name = os.path.abspath(orig_name)
             dir_name = os.path.dirname(full_name)
             base_name = os.path.basename(full_name)
+            if isinstance(full_name, type(u'')):
+              full_name = full_name.encode('utf-8')
             h = hashlib.md5(full_name).hexdigest()[:8]
             parts = base_name.split('.')
             parts[0] += '_' + h

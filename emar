@@ -5,6 +5,7 @@
 from tools.toolchain_profiler import ToolchainProfiler
 
 import sys
+from tools import shared
 
 if sys.version_info.major == 2:
   if __name__ == '__main__':
@@ -15,4 +16,4 @@ if sys.version_info.major == 2:
 else:
   import os, subprocess
   if __name__ == '__main__':
-    sys.exit(subprocess.call(['python2', os.path.join(os.path.dirname(os.path.realpath(__file__)), 'emar.py')] + sys.argv[1:]))
+    sys.exit(subprocess.call([shared.PYTHON, os.path.join(os.path.dirname(os.path.realpath(__file__)), 'emar.py')] + sys.argv[1:]))
