@@ -6,7 +6,7 @@ Processes asm.js code to make it run in an emterpreter.
 Currently this requires the asm.js code to have been built with -s FINALIZE_ASM_JS=0
 '''
 
-from __future__ import print_function
+from __future__ import print_function, division
 import os, sys, re, json, shutil
 
 sys.path.insert(1, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -840,7 +840,7 @@ if __name__ == '__main__':
     global global_func_id
     absolute_start = len(all_code) # true absolute starting point of this function (except for eb)
     #print 'processing code', func, absolute_start
-    for i in range(len(code)/4):
+    for i in range(len(code)//4):
       j = i*4
       if code[j] == 'EXTCALL':
         # fix CALL instructions' targets and signatures
