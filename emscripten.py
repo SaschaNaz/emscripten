@@ -2228,7 +2228,7 @@ WARNING: You should normally never use this! Use emcc instead.
   if len(positional) != 1:
     raise RuntimeError('Must provide exactly one positional argument. Got ' + str(len(positional)) + ': "' + '", "'.join(positional) + '"')
   keywords.infile = os.path.abspath(positional[0])
-  if isinstance(keywords.outfile, (type(''), type(b''))):
+  if isinstance(keywords.outfile, (type(''), bytes)):
     keywords.outfile = open(keywords.outfile, 'w', encoding='utf-8')
 
   if keywords.temp_dir is None:

@@ -933,7 +933,7 @@ if __name__ == '__main__':
     # finalize instruction string names to opcodes
     for i in range(len(code)//4):
       j = i*4
-      if type(code[j]) in (str, unicode):
+      if type(code[j]) in (type(u''), bytes):
         opcode_used[code[j]] = True
         code[j] = ROPCODES[code[j]]
 
