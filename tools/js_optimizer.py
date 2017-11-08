@@ -255,7 +255,7 @@ class Minifier(object):
     assert len(output) > 0 and not output.startswith(b'Assertion failed'), 'Error in js optimizer: ' + output
     #print >> sys.stderr, "minified SHELL 3333333333333333", output, "\n44444444444444444444"
     code, metadata = output.split(b'// EXTRA_INFO:')
-    self.globs = json.loads(metadata)
+    self.globs = json.loads(metadata.decode('utf-8'))
 
     if self.symbols_file:
       mapfile = open(self.symbols_file, 'w')
