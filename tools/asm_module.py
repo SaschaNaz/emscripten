@@ -3,12 +3,12 @@ from __future__ import print_function
 import sys, re, itertools
 
 from . import shared, js_optimizer
-
+from io import open
 
 class AsmModule():
   def __init__(self, filename):
     self.filename = filename
-    self.js = open(filename).read()
+    self.js = open(filename, encoding='utf-8').read()
 
     self.start_asm = self.js.find(js_optimizer.start_asm_marker)
     self.start_funcs = self.js.find(js_optimizer.start_funcs_marker)

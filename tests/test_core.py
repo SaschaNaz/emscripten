@@ -2314,7 +2314,7 @@ The current type of b is: 9
 
   dlfcn_post_build = '''
 def process(filename):
-  src = open(filename, 'r').read().replace(
+  src = open(filename, 'r', encoding='utf-8').read().replace(
     '// {{PRE_RUN_ADDITIONS}}',
     "FS.createDataFile('/', 'liblib.so', " + str(list(bytearray(open('liblib.so', 'rb').read()))) + ", true, false, false);"
   )
