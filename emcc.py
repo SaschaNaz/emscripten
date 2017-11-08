@@ -1612,7 +1612,7 @@ There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR P
           file_args.append('--lz4')
         if options.use_preload_plugins:
           file_args.append('--use-preload-plugins')
-        file_code = execute([shared.PYTHON, shared.FILE_PACKAGER, unsuffixed(target) + '.data'] + file_args, stdout=PIPE)[0]
+        file_code = execute([shared.PYTHON, shared.FILE_PACKAGER, unsuffixed(target) + '.data'] + file_args, stdout=PIPE)[0].decode('utf-8')
         options.pre_js = file_code + options.pre_js
 
       # Apply pre and postjs files
