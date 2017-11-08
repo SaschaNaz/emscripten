@@ -1,5 +1,5 @@
 
-from __future__ import print_function
+from __future__ import print_function, unicode_literals
 import os, sys, subprocess, multiprocessing, re, string, json, shutil, logging
 
 sys.path.insert(1, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -13,6 +13,8 @@ try:
 except ImportError:
   # Python 2 circular import compatibility
   import shared
+
+from io import open
 
 configuration = shared.configuration
 temp_files = configuration.get_temp_files()
@@ -61,7 +63,7 @@ def find_msbuild(sln_file, make_env):
                          ('ProgramFiles', 'MSBuild/12.0/Bin'),
                          ('ProgramFiles(x86)', 'MSBuild/12.0/Bin'),]
   search_paths_old = [("WINDIR", 'Microsoft.NET/Framework/v4.0.30319'),]
-  contents = open(sln_file, 'r').read()
+  contents = open(sln_file, 'r', encoding='utf-8').read()
   if '# Visual Studio Express 2013' in contents or '# Visual Studio 2013' in contents:
     search_paths = search_paths_vs2013 + search_paths_old
     pf_path = os.environ.get('ProgramFiles(x86)')
@@ -186,7 +188,7 @@ def get_native_optimizer():
     except NativeOptimizerCreationException as e:
       shared.logging.debug('failed to build native optimizer')
       handle_build_errors(outs, errs)
-      open(FAIL_MARKER, 'w').write(':(')
+      open(FAIL_MARKER, 'wb').write(b':(')
       return None
 
   def ignore_build_errors(outs, errs):
@@ -240,7 +242,7 @@ class Minifier(object):
       self.globs = []
 
     with temp_files.get_file('.minifyglobals.js') as temp_file:
-      f = open(temp_file, 'w')
+      f = open(temp_file, 'w', encoding='utf-8')
       f.write(shell)
       f.write('\n')
       f.write('// EXTRA_INFO:' + json.dumps(self.serialize()))
@@ -250,15 +252,15 @@ class Minifier(object):
           [JS_OPTIMIZER, temp_file, 'minifyGlobals', 'noPrintMetadata'] +
           (['minifyWhitespace'] if minify_whitespace else []) +
           (['--debug'] if source_map else []),
-          stdout=subprocess.PIPE).communicate()[0]
+          stdout=subprocess.PIPE).communicate()[0].decode('utf-8')
 
-    assert len(output) > 0 and not output.startswith(b'Assertion failed'), 'Error in js optimizer: ' + output
+    assert len(output) > 0 and not output.startswith('Assertion failed'), 'Error in js optimizer: ' + output
     #print >> sys.stderr, "minified SHELL 3333333333333333", output, "\n44444444444444444444"
-    code, metadata = output.split(b'// EXTRA_INFO:')
-    self.globs = json.loads(metadata.decode('utf-8'))
+    code, metadata = output.split('// EXTRA_INFO:')
+    self.globs = json.loads(metadata)
 
     if self.symbols_file:
-      mapfile = open(self.symbols_file, 'w')
+      mapfile = open(self.symbols_file, 'w', encoding='utf-8')
       for key, value in self.globs.items():
         mapfile.write(value + ':' + key + '\n')
       mapfile.close()
@@ -311,7 +313,7 @@ def run_on_js(filename, passes, js_engine, source_map=False, extra_info=None, ju
     if not isinstance(passes, list):
       passes = [passes]
 
-    js = open(filename).read()
+    js = open(filename, encoding='utf-8').read()
     if os.linesep != '\n':
       js = js.replace(os.linesep, '\n') # we assume \n in the splitting code
 
@@ -386,7 +388,7 @@ EMSCRIPTEN_FUNCS();
           return False
         return True
       passes = list(filter(check_symbol_mapping, passes))
-      asm_shell_pre, asm_shell_post = minifier.minify_shell(asm_shell, 'minifyWhitespace' in passes, source_map).split('EMSCRIPTEN_FUNCS();');
+      asm_shell_pre, asm_shell_post = minifier.minify_shell(asm_shell, 'minifyWhitespace' in passes, source_map).split('EMSCRIPTEN_FUNCS();')
       # Restore a comment for Closure Compiler
       asm_open_bracket = asm_shell_pre.find('(')
       asm_shell_pre = asm_shell_pre[:asm_open_bracket+1] + '/** @suppress {uselessCode} */' + asm_shell_pre[asm_open_bracket+1:]
@@ -440,7 +442,7 @@ EMSCRIPTEN_FUNCS();
       with ToolchainProfiler.profile_block('js_optimizer.write_chunks'):
         def write_chunk(chunk, i):
           temp_file = temp_files.get('.jsfunc_%d.js' % i).name
-          f = open(temp_file, 'w')
+          f = open(temp_file, 'w', encoding='utf-8')
           f.write(chunk)
           f.write(serialized_extra_info)
           f.close()
@@ -486,7 +488,7 @@ EMSCRIPTEN_FUNCS();
       cl_sep = 'wakaUnknownBefore(); var asm=wakaUnknownAfter(global,env,buffer)\n'
 
       with temp_files.get_file('.cl.js') as cle:
-        c = open(cle, 'w')
+        c = open(cle, 'w', encoding='utf-8')
         pre_1, pre_2 = pre.split(start_asm)
         post_1, post_2 = post.split(end_asm)
         c.write(pre_1)
@@ -497,7 +499,7 @@ EMSCRIPTEN_FUNCS();
         if split_memory:
           if DEBUG: print('running splitMemory on shell code', file=sys.stderr)
           cld = run_on_chunk(js_engine + [JS_OPTIMIZER, cld, 'splitMemoryShell'])
-          f = open(cld, 'a')
+          f = open(cld, 'a', encoding='utf-8')
           f.write(suffix_marker)
           f.close()
         if closure:
@@ -508,11 +510,11 @@ EMSCRIPTEN_FUNCS();
           if DEBUG: print('running cleanup on shell code', file=sys.stderr)
           next = cld + '.cl.js'
           temp_files.note(next)
-          proc = subprocess.Popen(js_engine + [JS_OPTIMIZER, cld, 'noPrintMetadata', 'JSDCE'] + (['minifyWhitespace'] if 'minifyWhitespace' in passes else []), stdout=open(next, 'w'))
+          proc = subprocess.Popen(js_engine + [JS_OPTIMIZER, cld, 'noPrintMetadata', 'JSDCE'] + (['minifyWhitespace'] if 'minifyWhitespace' in passes else []), stdout=open(next, 'wb'))
           proc.communicate()
           assert proc.returncode == 0
           cld = next
-        coutput = open(cld).read()
+        coutput = open(cld, encoding='utf-8').read()
 
       coutput = coutput.replace('wakaUnknownBefore();', start_asm)
       after = 'wakaUnknownAfter'
@@ -525,7 +527,7 @@ EMSCRIPTEN_FUNCS();
 
   with ToolchainProfiler.profile_block('write_pre'):
     filename += '.jo.js'
-    f = open(filename, 'w')
+    f = open(filename, 'w', encoding='utf-8')
     f.write(pre)
     pre = None
 
@@ -534,7 +536,7 @@ EMSCRIPTEN_FUNCS();
       # sort functions by size, to make diffing easier and to improve aot times
       funcses = []
       for out_file in filenames:
-        funcses.append(split_funcs(open(out_file).read(), False))
+        funcses.append(split_funcs(open(out_file, encoding='utf-8').read(), False))
       funcs = [item for sublist in funcses for item in sublist]
       funcses = None
       if not os.environ.get('EMCC_NO_OPT_SORT'):
@@ -551,7 +553,7 @@ EMSCRIPTEN_FUNCS();
     else:
       # just concat the outputs
       for out_file in filenames:
-        f.write(open(out_file).read())
+        f.write(open(out_file, encoding='utf-8').read())
 
   with ToolchainProfiler.profile_block('write_post'):
     f.write('\n')
