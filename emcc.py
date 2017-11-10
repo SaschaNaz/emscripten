@@ -2593,7 +2593,7 @@ def generate_html(target, options, js_target, target_basename,
     script.src = None
     script.inline = js_contents
 
-  html = open(target, 'wb')
+  html = open(target, 'w')
   html_contents = shell.replace('{{{ SCRIPT }}}', script.replacement())
   html_contents = tools.line_endings.convert_line_endings(html_contents, '\n', options.output_eol)
   html.write(html_contents)
