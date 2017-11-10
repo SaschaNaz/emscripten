@@ -288,7 +288,7 @@ class RunnerCore(unittest.TestCase):
     if post1:
       transform_filename = os.path.join(self.get_dir(), 'transform.py')
       transform = open(transform_filename, 'w')
-      transform.write('\nimport sys\nsys.path += [%r]\n' % path_from_root(''))
+      transform.write('\nimport sys\nfrom io import open\nsys.path += [%r]\n' % path_from_root(''))
       transform.write(post1)
       transform.write('\nprocess(sys.argv[1])\n')
       transform.close()
