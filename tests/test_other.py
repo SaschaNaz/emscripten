@@ -1335,7 +1335,7 @@ int f() {
       proc = Popen([PYTHON, EMCC, 'main.c'] + args, stderr=PIPE)
       err = proc.communicate()[1]
       assert proc.returncode is 0
-      assert ('encountered. If this is to a local system header/library, it may cause problems (local system files make sense for compiling natively on your system, but not necessarily to JavaScript)' in err) == expected, err
+      assert (b'encountered. If this is to a local system header/library, it may cause problems (local system files make sense for compiling natively on your system, but not necessarily to JavaScript)' in err) == expected, err
       if not expected:
         assert err == '', err
 
@@ -1561,24 +1561,24 @@ int f() {
       }
     ''')
     out, err = Popen([PYTHON, EMCC, 'main.c', '-L.', '-la'], stderr=PIPE).communicate()
-    assert 'loading from archive' not in err, err
-    assert 'which has duplicate entries' not in err, err
-    assert 'duplicate: common.o' not in err, err
+    assert b'loading from archive' not in err, err
+    assert b'which has duplicate entries' not in err, err
+    assert b'duplicate: common.o' not in err, err
     self.assertContained('a\nb...\n', run_js('a.out.js'))
 
     text = Popen([PYTHON, EMAR, 't', 'liba.a'], stdout=PIPE).communicate()[0]
-    assert 'common.o' not in text, text
-    assert text.count('common_') == 2, text
-    for line in text.split('\n'):
+    assert b'common.o' not in text, text
+    assert text.count(b'common_') == 2, text
+    for line in text.split(b'\n'):
       assert len(line) < 20, line # should not have huge hash names
 
     # make the hashing fail: 'q' is just a quick append, no replacement, so hashing is not done, and dupes are easy
     Popen([PYTHON, EMAR, 'q', 'liba.a', 'common.o', os.path.join('libdir', 'common.o')]).communicate()
     out, err = Popen([PYTHON, EMCC, 'main.c', '-L.', '-la'], stderr=PIPE).communicate()
-    assert 'loading from archive' in err, err
-    assert 'which has duplicate entries' in err, err
-    assert 'duplicate: common.o' in err, err
-    assert err.count('duplicate: ') == 1, err # others are not duplicates - the hashing keeps them separate
+    assert b'loading from archive' in err, err
+    assert b'which has duplicate entries' in err, err
+    assert b'duplicate: common.o' in err, err
+    assert err.count(b'duplicate: ') == 1, err # others are not duplicates - the hashing keeps them separate
 
   def test_export_in_a(self):
     export_name = 'this_is_an_entry_point'
@@ -2210,8 +2210,8 @@ int f() {
     open(os.path.join(self.get_dir(), 'foo.c'), 'w').write('''#include <emscripten.h>''')
     for opt in ['M', 'MM']:
       output, err = Popen([PYTHON, EMCC, os.path.join(self.get_dir(), 'foo.c'), '-' + opt], stdout=PIPE, stderr=PIPE).communicate()
-      assert 'foo.o: ' in output, '-%s failed to produce the right output: %s' % (opt, output)
-      assert 'error' not in err, 'Unexpected stderr: ' + err
+      assert b'foo.o: ' in output, '-%s failed to produce the right output: %s' % (opt, output.decode())
+      assert b'error' not in err, 'Unexpected stderr: ' + err.decode()
 
   def test_emcc_debug_files(self):
     if os.environ.get('EMCC_DEBUG'): return self.skip('cannot run in debug mode')
@@ -2255,8 +2255,8 @@ int f() {
         print(args, expect_llvm, expect_js)
         with clean_write_access_to_canonical_temp_dir():
           output, err = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.cpp')] + args, stdout=PIPE, stderr=PIPE).communicate()
-        assert expect_llvm == ('strip-debug' not in err)
-        assert expect_js == ('registerize' not in err)
+        assert expect_llvm == (b'strip-debug' not in err)
+        assert expect_js == (b'registerize' not in err)
     finally:
       del os.environ['EMCC_DEBUG']
 
@@ -2421,15 +2421,15 @@ seeked= file.
     # relative path to below the current dir is invalid
     out, err = Popen([PYTHON, FILE_PACKAGER, 'test.data', '--preload', '../data1.txt'], stdout=PIPE, stderr=PIPE).communicate()
     assert len(out) == 0
-    assert 'below the current directory' in err
+    assert b'below the current directory' in err
     # relative path that ends up under us is cool
     out, err = Popen([PYTHON, FILE_PACKAGER, 'test.data', '--preload', '../subdir/data2.txt'], stdout=PIPE, stderr=PIPE).communicate()
     assert len(out) > 0
-    assert 'below the current directory' not in err
+    assert b'below the current directory' not in err
     # direct path leads to the same code being generated - relative path does not make us do anything different
     out2, err2 = Popen([PYTHON, FILE_PACKAGER, 'test.data', '--preload', 'data2.txt'], stdout=PIPE, stderr=PIPE).communicate()
     assert len(out2) > 0
-    assert 'below the current directory' not in err2
+    assert b'below the current directory' not in err2
     def clean(txt):
       return [line for line in txt.split('\n') if 'PACKAGE_UUID' not in line and 'loadPackage({' not in line]
     out = clean(out)
@@ -3242,7 +3242,8 @@ int main() {
       # and sanity check it is not mentioned when not
       try_delete('header.h.' + suffix)
       err = Popen([PYTHON, EMCC, 'src.cpp', '-include', 'header.h', '-Xclang', '-print-stats'], stderr=PIPE).communicate()
-      assert '*** PCH/Modules Loaded:\nModule: header.h.' + suffix not in err[1].replace('\r\n', '\n'), err[1]
+      
+      assert b'*** PCH/Modules Loaded:\nModule: header.h.' + suffix.encode() not in err[1].replace(b'\r\n', b'\n'), err[1]
 
       # with specified target via -o
       try_delete('header.h.' + suffix)
@@ -3577,22 +3578,22 @@ int main()
   def test_bad_triple(self):
     Popen([CLANG, path_from_root('tests', 'hello_world.c'), '-c', '-emit-llvm', '-o', 'a.bc'] + get_clang_native_args(), env=get_clang_native_env(), stdout=PIPE, stderr=PIPE).communicate()
     out, err = Popen([PYTHON, EMCC, 'a.bc'], stdout=PIPE, stderr=PIPE).communicate()
-    assert 'warning' in err or 'WARNING' in err, err
-    assert 'incorrect target triple' in err or 'different target triples' in err, err
+    assert b'warning' in err or b'WARNING' in err, err
+    assert b'incorrect target triple' in err or b'different target triples' in err, err
 
   def test_valid_abspath(self):
     # Test whether abspath warning appears
     abs_include_path = os.path.abspath(self.get_dir())
     process = Popen([PYTHON, EMCC, '-I%s' % abs_include_path, '-Wwarn-absolute-paths', path_from_root('tests', 'hello_world.c')], stdout=PIPE, stderr=PIPE)
     out, err = process.communicate()
-    warning = '-I or -L of an absolute path "-I%s" encountered. If this is to a local system header/library, it may cause problems (local system files make sense for compiling natively on your system, but not necessarily to JavaScript).' % abs_include_path
+    warning = b'-I or -L of an absolute path "-I%s" encountered. If this is to a local system header/library, it may cause problems (local system files make sense for compiling natively on your system, but not necessarily to JavaScript).' % abs_include_path.encode('utf-8')
     assert(warning in err)
 
     # Passing an absolute path to a directory inside the emscripten tree is always ok and should not issue a warning.
     abs_include_path = path_from_root('tests')
     process = Popen([PYTHON, EMCC, '-I%s' % abs_include_path, '-Wwarn-absolute-paths', path_from_root('tests', 'hello_world.c')], stdout=PIPE, stderr=PIPE)
     out, err = process.communicate()
-    warning = '-I or -L of an absolute path "-I%s" encountered. If this is to a local system header/library, it may cause problems (local system files make sense for compiling natively on your system, but not necessarily to JavaScript).' % abs_include_path
+    warning = b'-I or -L of an absolute path "-I%s" encountered. If this is to a local system header/library, it may cause problems (local system files make sense for compiling natively on your system, but not necessarily to JavaScript).' % abs_include_path.encode('utf-8')
     assert(warning not in err)
 
     # Hide warning for this include path
@@ -3606,7 +3607,7 @@ int main()
     for suffix in ['.o', '.a', '.bc', '.so', '.lib', '.dylib', '.js', '.html']:
       process = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-o', 'out' + suffix], stdout=PIPE, stderr=PIPE)
       out, err = process.communicate()
-      warning = 'Dynamic libraries (.so, .dylib, .dll) are currently not supported by Emscripten'
+      warning = b'Dynamic libraries (.so, .dylib, .dll) are currently not supported by Emscripten'
       if suffix in shared_suffixes:
         assert(warning in err)
       else:
@@ -5646,8 +5647,8 @@ Descriptor desc;
       args = [PYTHON, path_from_root(what)] + args
       print(what, args, fail, expect)
       out, err = Popen(args, stdout=PIPE, stderr=PIPE).communicate()
-      assert ('is a helper for' in err) == fail
-      assert ('Typical usage' in err) == fail
+      assert (b'is a helper for' in err) == fail
+      assert (b'Typical usage' in err) == fail
       self.assertContained(expect, out)
     check('emmake', [])
     check('emconfigure', [])
@@ -5696,7 +5697,7 @@ print os.environ.get('NM')
         self.clear()
         out, err = Popen([PYTHON, EMCC, source, '-O' + str(opts)], stderr=PIPE).communicate()
         assert os.path.exists('a.out.js')
-        assert ('emitted code will contain very large numbers of local variables' in err) == (warn and (opts in [0, 1]))
+        assert (b'emitted code will contain very large numbers of local variables' in err) == (warn and (opts in [0, 1]))
 
   def test_module_onexit(self):
     open('src.cpp', 'w').write(r'''
@@ -5727,7 +5728,7 @@ int main() {
     out, err = Popen([PYTHON, FILE_PACKAGER, 'test.data', '--preload', 'tiny.dat'], stdout=PIPE, stderr=PIPE).communicate()
     assert err == '', err
     out, err = Popen([PYTHON, FILE_PACKAGER, 'test.data', '--preload', 'huge.dat'], stdout=PIPE, stderr=PIPE).communicate()
-    assert 'warning: file packager is creating an asset bundle of 257 MB. this is very large, and browsers might have trouble loading it' in err, err
+    assert b'warning: file packager is creating an asset bundle of 257 MB. this is very large, and browsers might have trouble loading it' in err, err
     self.clear()
 
   def test_nosplit(self): # relooper shouldn't split nodes if -Os or -Oz
@@ -6298,7 +6299,7 @@ int main() {
     self.assertNotContained('''function requested to be exported, but not implemented: "_alGetError"''', err)
 
   def test_almost_asm_warning(self):
-    warning = "[-Walmost-asm]"
+    warning = b"[-Walmost-asm]"
     for args, expected in [(['-O1', '-s', 'SPLIT_MEMORY=8388608', '-s', 'TOTAL_MEMORY=' + str(16*1024*1024)], True),  # default
                            # suppress almost-asm warning when building with ALLOW_MEMORY_GROWTH
                            (['-O1', '-s', 'ALLOW_MEMORY_GROWTH=1', '-Wno-almost-asm'], False),
@@ -6312,7 +6313,7 @@ int main() {
       assert proc.returncode is 0
       assert (warning in err) == expected, err
       if not expected:
-        assert err == '', err
+        assert err == b'', err
 
   def test_static_syscalls(self):
     Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.c')]).communicate()
@@ -6382,13 +6383,13 @@ mergeInto(LibraryManager.library, {
     proc = Popen([PYTHON, EMCC, 'test.cpp', '-s', 'ERROR_ON_UNDEFINED_SYMBOLS=1', '--js-library', 'library_foo.js'], stderr=PIPE)
     out, err = proc.communicate()
     assert proc.returncode != 0
-    assert 'unresolved symbol' in err
+    assert b'unresolved symbol' in err
 
     # and also for missing C code, of course (without the --js-library, it's just a missing C method)
     proc = Popen([PYTHON, EMCC, 'test.cpp', '-s', 'ERROR_ON_UNDEFINED_SYMBOLS=1'], stderr=PIPE)
     out, err = proc.communicate()
     assert proc.returncode != 0
-    assert 'unresolved symbol' in err
+    assert b'unresolved symbol' in err
 
   def test_realpath(self):
     open('src.c', 'w').write(r'''
@@ -7493,8 +7494,8 @@ int main() {
             proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
             output, err = proc.communicate()
             assert proc.returncode == 0
-            assert expect_js_opts == ('applying js optimization passes:' in err), err
-            assert expect_only_wasm == ('-emscripten-only-wasm' in err and '--wasm-only' in err), err # check both flag to fastcomp and to asm2wasm
+            assert expect_js_opts == (b'applying js optimization passes:' in err), err
+            assert expect_only_wasm == (b'-emscripten-only-wasm' in err and b'--wasm-only' in err), err # check both flag to fastcomp and to asm2wasm
             wast = open('a.out.wast').read()
             # i64s
             i64s = wast.count('(i64.')
@@ -7507,7 +7508,7 @@ int main() {
             else:
               assert selects < 10, 'when not optimizing for size we should not create selects'
             # asm2wasm opt line
-            asm2wasm_line = [line for line in err.split('\n') if 'asm2wasm' in line]
+            asm2wasm_line = [line for line in err.split(b'\n') if 'asm2wasm' in line]
             asm2wasm_line = '' if not asm2wasm_line else asm2wasm_line[0]
             if '-O0' in args or '-O' not in str(args):
               assert '-O' not in asm2wasm_line, 'no opts should be passed to asm2wasm: ' + asm2wasm_line
@@ -7534,7 +7535,7 @@ int main() {
         try_delete('a.out.js')
         with clean_write_access_to_canonical_temp_dir():
           output, err = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.cpp'), '-s', 'BINARYEN=1', '-s', 'BINARYEN_METHOD="interpret-binary"'] + args, stdout=PIPE, stderr=PIPE).communicate()
-        assert expect == (' -emscripten-precise-f32' in err), err
+        assert expect == (b' -emscripten-precise-f32' in err), err
         self.assertContained('hello, world!', run_js('a.out.js'))
     finally:
       del os.environ['EMCC_DEBUG']
@@ -7715,7 +7716,7 @@ int main() {
           proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
           output, err = proc.communicate()
           assert proc.returncode == 0
-          asm2wasm_line = [x for x in err.split('\n') if 'asm2wasm' in x][0]
+          asm2wasm_line = [x for x in err.split(b'\n') if 'asm2wasm' in x][0]
           asm2wasm_line = asm2wasm_line.strip() + ' ' # ensure it ends with a space, for simpler searches below
           print('|' + asm2wasm_line + '|')
           assert expect_dash_g == (' -g ' in asm2wasm_line)
@@ -7745,7 +7746,7 @@ int main() {
           cmd = [PYTHON, EMCC, path_from_root('tests', 'hello_libcxx.cpp'), '-s', 'WASM=1', '-O3'] + args
           print(' '.join(cmd))
           output, err = Popen(cmd, stdout=PIPE, stderr=PIPE).communicate()
-          asm2wasm_line = [x for x in err.split('\n') if 'asm2wasm' in x][0]
+          asm2wasm_line = [x for x in err.split(b'\n') if 'asm2wasm' in x][0]
           asm2wasm_line = asm2wasm_line.strip() + ' ' # ensure it ends with a space, for simpler searches below
           print('|' + asm2wasm_line + '|')
           assert expect == (' --ignore-implicit-traps ' in asm2wasm_line)
@@ -7889,14 +7890,14 @@ int main() {
     Popen([CLANG, '-c', path_from_root('tests', 'hello_world.c'), '-o', 'hello_world.o'] + get_clang_native_args(), env=get_clang_native_env(), stdout=PIPE, stderr=PIPE).communicate()
     Popen([LLVM_AR, 'r', 'hello_world.a', 'hello_world.o'], env=get_clang_native_env(), stdout=PIPE, stderr=PIPE).communicate()
     out, err = Popen([PYTHON, EMCC, 'hello_world.a', '-o', 'hello_world.js'], stdout=PIPE, stderr=PIPE).communicate()
-    assert 'exists but was not an LLVM bitcode file suitable for Emscripten. Perhaps accidentally mixing native built object files with Emscripten?' in err
+    assert b'exists but was not an LLVM bitcode file suitable for Emscripten. Perhaps accidentally mixing native built object files with Emscripten?' in err
 
   # Tests that the warning message about pairing WASM with EVAL_CTORS appropriately triggers the warning about NO_EXIT_RUNTIME.
   def test_binaryen_no_exit_runtime_warn_message(self):
     out, err = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-o', 'hello_world.js', '-s', 'WASM=1', '-Oz'], stdout=PIPE, stderr=PIPE).communicate()
-    assert 'you should enable  -s NO_EXIT_RUNTIME=1' in err
+    assert b'you should enable  -s NO_EXIT_RUNTIME=1' in err
     out, err = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-o', 'hello_world.bc', '-s', 'WASM=1', '-Oz'], stdout=PIPE, stderr=PIPE).communicate()
-    assert 'you should enable  -s NO_EXIT_RUNTIME=1' not in err
+    assert b'you should enable  -s NO_EXIT_RUNTIME=1' not in err
 
   def test_o_level_clamp(self):
     for level in [3, 4, 20]:
