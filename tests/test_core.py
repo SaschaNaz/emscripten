@@ -2314,11 +2314,11 @@ The current type of b is: 9
 
   dlfcn_post_build = '''
 def process(filename):
-  src = open(filename, 'rb').read().replace(
-    b'// {{PRE_RUN_ADDITIONS}}',
-    b"FS.createDataFile('/', 'liblib.so', " + bytes(list(bytearray(open('liblib.so', 'rb').read()))) + b", true, false, false);"
+  src = open(filename, 'r', encoding='utf-8').read().replace(
+    '// {{PRE_RUN_ADDITIONS}}',
+    "FS.createDataFile('/', 'liblib.so', %s, true, false, false);" % list(bytearray(open('liblib.so', 'rb').read()))
   )
-  open(filename, 'wb').write(src)
+  open(filename, 'w', encoding='utf-8').write(src)
 '''
 
   def build_dlfcn_lib(self, lib_src, dirname, filename):
