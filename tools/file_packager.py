@@ -252,25 +252,23 @@ def escape_for_js_string(s):
 def add(mode, rootpathsrc, rootpathdst):
   # rootpathsrc: The path name of the root directory on the local FS we are adding to emscripten virtual FS.
   # rootpathdst: The name we want to make the source path available on the emscripten virtual FS.
-  for root, dirs, files in os.walk(rootpathsrc):
-    new_dirs = []
-    for name in dirs:
-      fullname = os.path.join(dirname, name)
-      if should_ignore(fullname):
-        if DEBUG:
-          print('Skipping file "' + fullname + '" from inclusion in the emscripten virtual file system.', file=sys.stderr)
-      else:
-        new_dirs.append(name)
-    for name in files:
-      fullname = os.path.join(dirname, name)
-      if should_ignore(fullname):
-        if DEBUG:
-          print('Skipping file "' + fullname + '" from inclusion in the emscripten virtual file system.', file=sys.stderr)
-      else:
+  for dirpath, dirnames, filenames in os.walk(rootpathsrc):
+    new_dirnames = []
+    for name in dirnames:
+      fullname = os.path.join(dirpath, name)
+      if not should_ignore(fullname):
+        new_dirnames.append(name)
+      elif DEBUG:
+        print('Skipping directory "' + fullname + '" from inclusion in the emscripten virtual file system.', file=sys.stderr)
+    for name in filenames:
+      fullname = os.path.join(dirpath, name)
+      if not should_ignore(fullname):
         dstpath = os.path.join(rootpathdst, os.path.relpath(fullname, rootpathsrc)) # Convert source filename relative to root directory of target FS.
         new_data_files.append({ 'srcpath': fullname, 'dstpath': dstpath, 'mode': mode, 'explicit_dst_path': True })
-    del dirs[:]
-    dirs.extend(new_dirs)
+      elif DEBUG:
+        print('Skipping file "' + fullname + '" from inclusion in the emscripten virtual file system.', file=sys.stderr)
+    del dirnames[:]
+    dirnames.extend(new_dirnames)
 
 new_data_files = []
 for file_ in data_files:
