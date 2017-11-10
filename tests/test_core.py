@@ -6561,7 +6561,7 @@ def process(filename):
       basename = os.path.join(self.get_dir(), 'bindingtest')
       output = Popen([PYTHON, BINDINGS_GENERATOR, basename, header_filename], stdout=PIPE, stderr=self.stderr_redirect).communicate()[0]
       #print output
-      assert 'Traceback' not in output, 'Failure in binding generation: ' + output
+      assert b'Traceback' not in output, 'Failure in binding generation: ' + output.decode()
 
       src = '''
         #include "header.h"
@@ -6740,7 +6740,7 @@ Child2:9
       basename = os.path.join(self.get_dir(), 'bindingtest')
       output = Popen([PYTHON, BINDINGS_GENERATOR, basename, header_filename], stdout=PIPE, stderr=self.stderr_redirect).communicate()[0]
       #print output
-      assert 'Traceback' not in output, 'Failure in binding generation: ' + output
+      assert b'Traceback' not in output, 'Failure in binding generation: ' + output.decode()
 
       src = '''
         #include "header.h"
