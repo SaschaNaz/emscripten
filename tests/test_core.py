@@ -2050,7 +2050,7 @@ The current type of b is: 9
       Building.link([supp_name + '.o', main_name + '.o'], all_name)
 
       # This will fail! See explanation near the warning we check for, in the compiler source code
-      output = Popen([PYTHON, EMCC, all_name], stderr=PIPE).communicate()
+      output = Popen([PYTHON, EMCC, all_name], stderr=PIPE, universal_newlines=True).communicate()
 
       # Check for warning in the generated code
       generated = open(os.path.join(self.get_dir(), 'src.cpp.o.js')).read()
@@ -4992,7 +4992,7 @@ int main(void) {
 
       try_delete(os.path.join(self.get_dir(), 'src.cpp.o.js'))
       output = Popen([PYTHON, EMCC, path_from_root('tests', 'dlmalloc_test.c'), '-s', 'TOTAL_MEMORY=128MB',
-                      '-o', os.path.join(self.get_dir(), 'src.cpp.o.js')], stdout=PIPE, stderr=self.stderr_redirect).communicate()
+                      '-o', os.path.join(self.get_dir(), 'src.cpp.o.js')], stdout=PIPE, stderr=self.stderr_redirect, universal_newlines=True).communicate()
 
       self.do_run('x', '*1,0*', ['200', '1'], no_build=True)
       self.do_run('x', '*400,0*', ['400', '400'], no_build=True)
@@ -6556,7 +6556,7 @@ someweirdtext
 
       output = Popen([PYTHON, path_from_root('tools', 'webidl_binder.py'),
                               path_from_root('tests', 'webidl', 'test.idl'),
-                              'glue']).communicate()[0]
+                              'glue'], universal_newlines=True).communicate()[0]
       assert os.path.exists('glue.cpp')
       assert os.path.exists('glue.js')
 

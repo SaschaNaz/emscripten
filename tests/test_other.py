@@ -113,7 +113,7 @@ There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR P
           continue
         target = args[1] if len(args) == 2 else 'hello_world.o'
         self.clear()
-        proc = Popen([PYTHON, compiler, path_from_root('tests', 'hello_world' + suffix)] + args, stdout=PIPE, stderr=PIPE)
+        proc = Popen([PYTHON, compiler, path_from_root('tests', 'hello_world' + suffix)] + args, stdout=PIPE, stderr=PIPE, universal_newlines=True)
         proc.communicate()
         assert proc.returncode == 0, [proc.returncode, args]
         if args[-1] == '/dev/null':
@@ -313,13 +313,13 @@ f.write('transformed!')
 f.close()
 ''')
       trans_file.close()
-      output = Popen([PYTHON, compiler, path_from_root('tests', 'hello_world' + suffix), '--js-transform', '%s t.py' % (PYTHON)], stdout=PIPE, stderr=PIPE).communicate()
+      output = Popen([PYTHON, compiler, path_from_root('tests', 'hello_world' + suffix), '--js-transform', '%s t.py' % (PYTHON)], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()
       assert open('a.out.js').read() == 'transformed!', 'Transformed output must be as expected'
 
       for opts in [0, 1, 2, 3]:
         print('mem init in', opts)
         self.clear()
-        output = Popen([PYTHON, compiler, path_from_root('tests', 'hello_world.c'), '-O' + str(opts)], stdout=PIPE, stderr=PIPE).communicate()
+        output = Popen([PYTHON, compiler, path_from_root('tests', 'hello_world.c'), '-O' + str(opts)], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()
         assert os.path.exists('a.out.js.mem') == (opts >= 2), 'mem file should exist in -O2+'
 
   # Test that if multiple processes attempt to access or build stuff to the cache on demand, that exactly one of the processes
@@ -641,7 +641,7 @@ f.close()
   def test_failure_error_code(self):
     for compiler in [EMCC, EMXX]:
       # Test that if one file is missing from the build, then emcc shouldn't succeed, and shouldn't try to produce an output file.
-      process = Popen([PYTHON, compiler, path_from_root('tests', 'hello_world.c'), 'this_file_is_missing.c', '-o', 'this_output_file_should_never_exist.js'], stdout=PIPE, stderr=PIPE)
+      process = Popen([PYTHON, compiler, path_from_root('tests', 'hello_world.c'), 'this_file_is_missing.c', '-o', 'this_output_file_should_never_exist.js'], stdout=PIPE, stderr=PIPE, universal_newlines=True)
       process.communicate()
       assert process.returncode is not 0, 'Trying to compile a nonexisting file should return with a nonzero error code!'
       assert os.path.exists('this_output_file_should_never_exist.js') == False, 'Emcc should not produce an output file when build fails!'
@@ -658,21 +658,21 @@ f.close()
 
   def test_cxx03(self):
     for compiler in [EMCC, EMXX]:
-      process = Popen([PYTHON, compiler, path_from_root('tests', 'hello_cxx03.cpp')], stdout=PIPE, stderr=PIPE)
+      process = Popen([PYTHON, compiler, path_from_root('tests', 'hello_cxx03.cpp')], stdout=PIPE, stderr=PIPE, universal_newlines=True)
       process.communicate()
       assert process.returncode is 0, 'By default, emscripten should build using -std=c++03!'
 
   def test_cxx11(self):
     for std in ['-std=c++11', '--std=c++11']:
       for compiler in [EMCC, EMXX]:
-        process = Popen([PYTHON, compiler, std, path_from_root('tests', 'hello_cxx11.cpp')], stdout=PIPE, stderr=PIPE)
+        process = Popen([PYTHON, compiler, std, path_from_root('tests', 'hello_cxx11.cpp')], stdout=PIPE, stderr=PIPE, universal_newlines=True)
         process.communicate()
         assert process.returncode is 0, 'User should be able to specify custom -std= on the command line!'
 
   # Regression test for issue #4522: Incorrect CC vs CXX detection
   def test_incorrect_c_detection(self):
     for compiler in [EMCC, EMXX]:
-      process = Popen([PYTHON, compiler, "--bind", "--embed-file", path_from_root('tests', 'hello_world.c'), path_from_root('tests', 'hello_world.cpp')], stdout=PIPE, stderr=PIPE)
+      process = Popen([PYTHON, compiler, "--bind", "--embed-file", path_from_root('tests', 'hello_world.c'), path_from_root('tests', 'hello_world.cpp')], stdout=PIPE, stderr=PIPE, universal_newlines=True)
       process.communicate()
       assert process.returncode is 0, 'Emscripten should not use the embed file for CC/CXX detection'
 
@@ -755,7 +755,7 @@ f.close()
     open('src.c', 'w').write(src)
     def test(args, expected, moar_expected=None):
       print(args, expected, moar_expected)
-      out, err = Popen([PYTHON, EMCC, 'src.c'] + args, stderr=PIPE).communicate()
+      out, err = Popen([PYTHON, EMCC, 'src.c'] + args, stderr=PIPE, universal_newlines=True).communicate()
       self.assertContained(expected, run_js(self.in_dir('a.out.js'), stderr=PIPE, full_output=True, assert_returncode=None))
       print('with emulated function pointers')
       Popen([PYTHON, EMCC, 'src.c'] + args + ['-s', 'EMULATED_FUNCTION_POINTERS=1'], stderr=PIPE).communicate()
@@ -2238,7 +2238,7 @@ seeked= file.
     Popen([PYTHON, EMCC, os.path.join(self.get_dir(), 'main.cpp'), '-o', 'main.o']).communicate()
     Popen([PYTHON, EMCC, os.path.join(self.get_dir(), 'supp.cpp'), '-o', 'supp.o']).communicate()
 
-    output = Popen([PYTHON, EMCC, os.path.join(self.get_dir(), 'main.o'), '-s', os.path.join(self.get_dir(), 'supp.o'), '-s', 'SAFE_HEAP=1'], stderr=PIPE).communicate()
+    output = Popen([PYTHON, EMCC, os.path.join(self.get_dir(), 'main.o'), '-s', os.path.join(self.get_dir(), 'supp.o'), '-s', 'SAFE_HEAP=1'], stderr=PIPE, universal_newlines=True).communicate()
     output = run_js('a.out.js')
     assert 'yello' in output, 'code works'
     code = open('a.out.js').read()
@@ -3463,7 +3463,7 @@ int main()
         raise Exception('cannot find llvm-lit tool')
     cmd = [PYTHON, LLVM_LIT, '-v', os.path.join(llvm_src, 'test', 'CodeGen', 'JS')]
     print(cmd)
-    p = Popen(cmd)
+    p = Popen(cmd, universal_newlines=True)
     p.communicate()
     assert p.returncode == 0, 'LLVM tests must pass with exit code 0'
 
@@ -3620,9 +3620,9 @@ int main()
     # e.g. they assume our 'executable' extension is bc, and compile an .o to a .bc
     # (the user would then need to build bc to js of course, but we need to actually
     # emit the bc)
-    cmd = Popen([PYTHON, EMCC, '-c', path_from_root('tests', 'hello_world.c')]).communicate()
+    cmd = Popen([PYTHON, EMCC, '-c', path_from_root('tests', 'hello_world.c')], universal_newlines=True).communicate()
     assert os.path.exists('hello_world.o')
-    cmd = Popen([PYTHON, EMCC, 'hello_world.o', '-o', 'hello_world.bc']).communicate()
+    cmd = Popen([PYTHON, EMCC, 'hello_world.o', '-o', 'hello_world.bc'], universal_newlines=True).communicate()
     assert os.path.exists('hello_world.o')
     assert os.path.exists('hello_world.bc')
 
@@ -3751,14 +3751,14 @@ int main(int argc, char **argv) {
 
     # Test that -s NO_DYNAMIC_EXECUTION=1 and --closure 1 are not allowed together.
     cmd = [PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-O1', '-s', 'NO_DYNAMIC_EXECUTION=1', '--closure', '1']
-    proc = Popen(cmd, stderr=PIPE)
+    proc = Popen(cmd, stderr=PIPE, universal_newlines=True)
     proc.communicate()
     assert proc.returncode != 0
     try_delete('a.out.js')
 
     # Test that -s NO_DYNAMIC_EXECUTION=1 and -s RELOCATABLE=1 are not allowed together.
     cmd = [PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-O1', '-s', 'NO_DYNAMIC_EXECUTION=1', '-s', 'RELOCATABLE=1']
-    proc = Popen(cmd, stderr=PIPE)
+    proc = Popen(cmd, stderr=PIPE, universal_newlines=True)
     proc.communicate()
     assert proc.returncode != 0
     try_delete('a.out.js')
@@ -5849,7 +5849,7 @@ int main(int argc, char** argv) {
     open('src.c', 'w').write(src)
     def test(args, expected):
       print(args, expected)
-      out, err = Popen([PYTHON, EMCC, 'src.c'] + args, stderr=PIPE).communicate()
+      out, err = Popen([PYTHON, EMCC, 'src.c'] + args, stderr=PIPE, universal_newlines=True).communicate()
       self.assertContained(expected, run_js(self.in_dir('a.out.js')))
 
     for opts in [0, 1, 2, 3]:
@@ -6148,7 +6148,7 @@ int main() {
   printf("hello, world!\n");
 }
 ''')
-    out, err = Popen([PYTHON, EMCC, 'src.c', '-s', 'EXPORTED_FUNCTIONS=["_main", "_treecount"]', '--minify', '0', '-g4', '-Oz']).communicate()
+    out, err = Popen([PYTHON, EMCC, 'src.c', '-s', 'EXPORTED_FUNCTIONS=["_main", "_treecount"]', '--minify', '0', '-g4', '-Oz'], universal_newlines=True).communicate()
     self.assertContained('hello, world!', run_js('a.out.js'))
 
   def test_meminit_crc(self):
@@ -6157,7 +6157,7 @@ int main() {
 #include <stdio.h>
 int main() { printf("Mary had a little lamb.\n"); }
 ''')
-    out, err = Popen([PYTHON, EMCC, 'src.c', '-O2', '--memory-init-file', '0', '-s', 'MEM_INIT_METHOD=2', '-s', 'ASSERTIONS=1']).communicate()
+    out, err = Popen([PYTHON, EMCC, 'src.c', '-O2', '--memory-init-file', '0', '-s', 'MEM_INIT_METHOD=2', '-s', 'ASSERTIONS=1'], universal_newlines=True).communicate()
     with open('a.out.js', 'r') as f:
       d = f.read()
     d = d.replace('Mary had', 'Paul had')
@@ -6825,7 +6825,7 @@ int main() {
     assert "high = 1234" in out
 
   def test_lib_include_flags(self):
-    process = Popen([PYTHON, EMCC] + '-l m -l c -I'.split() + [path_from_root('tests', 'include_test'), path_from_root('tests', 'lib_include_flags.c')], stdout=PIPE, stderr=PIPE)
+    process = Popen([PYTHON, EMCC] + '-l m -l c -I'.split() + [path_from_root('tests', 'include_test'), path_from_root('tests', 'lib_include_flags.c')], stdout=PIPE, stderr=PIPE, universal_newlines=True)
     process.communicate()
     assert process.returncode is 0, 'Empty -l/-L/-I flags should read the next arg as a param'
 
@@ -7762,7 +7762,7 @@ int main() {
         try_delete('a.out.wast')
         cmd = [PYTHON, EMCC, path_from_root('tests', 'other', 'ffi.c'), '-s', 'WASM=1', '-g', '-o', 'a.out.js'] + args
         print(' '.join(cmd))
-        proc = Popen(cmd, stdout=PIPE)
+        proc = Popen(cmd, stdout=PIPE, universal_newlines=True)
         output, err = proc.communicate()
         assert proc.returncode == 0
         text = open('a.out.wast').read()
@@ -7859,19 +7859,19 @@ int main() {
     env = os.environ.copy()
     if 'EMCC_STRICT' in env: del env['EMCC_STRICT']
 
-    process = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.cpp'), '-lsomenonexistingfile', '-s', 'STRICT=1'], stdout=PIPE, stderr=PIPE, env=env)
+    process = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.cpp'), '-lsomenonexistingfile', '-s', 'STRICT=1'], stdout=PIPE, stderr=PIPE, env=env, universal_newlines=True)
     process.communicate()
     assert process.returncode is not 0, '-llsomenonexistingfile is an error in strict mode'
 
-    process = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.cpp'), '-lsomenonexistingfile', '-s', 'ERROR_ON_MISSING_LIBRARIES=0'], stdout=PIPE, stderr=PIPE, env=env)
+    process = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.cpp'), '-lsomenonexistingfile', '-s', 'ERROR_ON_MISSING_LIBRARIES=0'], stdout=PIPE, stderr=PIPE, env=env, universal_newlines=True)
     process.communicate()
     assert process.returncode is 0, '-llsomenonexistingfile is not an error if -s ERROR_ON_MISSING_LIBRARIES=0 is passed'
 
-    process = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.cpp'), '-lsomenonexistingfile', '-s', 'STRICT=1', '-s', 'ERROR_ON_MISSING_LIBRARIES=0'], stdout=PIPE, stderr=PIPE, env=env)
+    process = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.cpp'), '-lsomenonexistingfile', '-s', 'STRICT=1', '-s', 'ERROR_ON_MISSING_LIBRARIES=0'], stdout=PIPE, stderr=PIPE, env=env, universal_newlines=True)
     process.communicate()
     assert process.returncode is 0, '-s ERROR_ON_MISSING_LIBRARIES=0 should override -s STRICT=1'
 
-    process = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.cpp'), '-lsomenonexistingfile', '-s', 'STRICT=0'], stdout=PIPE, stderr=PIPE, env=env)
+    process = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.cpp'), '-lsomenonexistingfile', '-s', 'STRICT=0'], stdout=PIPE, stderr=PIPE, env=env, universal_newlines=True)
     process.communicate()
     # TODO: TEMPORARY: When -s ERROR_ON_MISSING_LIBRARIES=1 becomes the default, change the following line to expect failure instead of 0.
     assert process.returncode is 0, '-llsomenonexistingfile is not yet an error in non-strict mode'
@@ -7969,7 +7969,7 @@ int main() {
 
                     print(' '.join(cmd))
                     self.clear()
-                    proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
+                    proc = Popen(cmd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
                     output, err = proc.communicate()
                     print(os.listdir('.'))
                     assert expect_success == (proc.returncode == 0)
