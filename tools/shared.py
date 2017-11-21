@@ -2524,6 +2524,39 @@ class WebAssembly(object):
     f.close()
     return wso
 
+# https://docs.python.org/3/library/subprocess.html#subprocess.CompletedProcess
+class Py2CompletedProcess:
+  def __init__(self, process, args):
+    (self.stdout, self.stderr) = process.communicate()
+    self.args = args
+    self.returncode = process.returncode
+
+  def check_returncode(self):
+    if self.returncode is not 0:
+      raise Exception("Non-zero return code is detected.")
+
+def run_base(cmd, check=False, *args, **kw):
+  if hasattr(subprocess, "run"):
+    return subprocess.run(cmd, check=check, *args, **kw)
+
+  # Python 2 compatibility: Introduce Python 3 subprocess.run-like behavior
+  result = Py2CompletedProcess(Popen(cmd, *args, **kw), args)
+  if check:
+    result.check_returncode()
+  return result
+
+def run_textmode(cmd, *args, **kw):
+  return run_base(cmd, universal_newlines=True, *args, **kw)
+
+def check_run(cmd, *args, **kw):
+  try:
+    result = run_textmode(cmd, check=True, *args, **kw)
+    logging.debug("Successfuly executed %s" % " ".join(cmd))
+    return result
+  except subprocess.CalledProcessError as e:
+    logging.error("'%s' failed with output:\n%s" % (" ".join(e.cmd), e.output))
+    raise
+
 def execute(cmd, *args, **kw):
   try:
     cmd[0] = Building.remove_quotes(cmd[0])
