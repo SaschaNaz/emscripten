@@ -2531,9 +2531,17 @@ class Py2CompletedProcess:
     self.args = args
     self.returncode = process.returncode
 
+  def __repr__(self):
+    _repr = ['args=%s, returncode=%s' % (self.args, self.returncode)]
+    if self.stdout is not None:
+      _repr += 'stdout=' + self.stdout
+    if self.stderr is not None:
+      _repr += 'stderr=' + self.stderr
+    return 'CompletedProcess(%s)' % ', '.join(_repr)
+
   def check_returncode(self):
     if self.returncode is not 0:
-      raise Exception("Non-zero return code is detected.")
+      raise subprocess.CalledProcessError(returncode=self.returncode, cmd=self.args, output=self.stdout)
 
 def run_base(cmd, check=False, *args, **kw):
   if hasattr(subprocess, "run"):
@@ -2547,6 +2555,10 @@ def run_base(cmd, check=False, *args, **kw):
 
 def run_textmode(cmd, *args, **kw):
   return run_base(cmd, universal_newlines=True, *args, **kw)
+
+def run_textmode_tuple(cmd, *args, **kw):
+  result = run_textmode(cmd, *args, **kw)
+  return (result.stdout, result.stderr)
 
 def check_run(cmd, *args, **kw):
   try:
