@@ -50,7 +50,7 @@ class sanity(RunnerCore):
     if command[0] == EMCC:
       command = [PYTHON] + command
 
-    return Popen(command, stdout=PIPE, stderr=STDOUT, universal_newlines=True).communicate()[0]
+    return run_textmode(command, stdout=PIPE, stderr=STDOUT).stdout
 
   def check_working(self, command, expected=None):
     if type(command) is not list:

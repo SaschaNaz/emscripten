@@ -170,7 +170,7 @@ class benchmark(RunnerCore):
     try:
       d = os.getcwd()
       os.chdir(os.path.expanduser('~/Dev/mozilla-central'))
-      fingerprint.append('sm: ' + [line for line in Popen(['hg', 'tip'], stdout=PIPE, universal_newlines=True).communicate()[0].split('\n') if 'changeset' in line][0])
+      fingerprint.append('sm: ' + [line for line in run_textmode(['hg', 'tip'], stdout=PIPE).stdout.split('\n') if 'changeset' in line][0])
     except:
       pass
     finally:

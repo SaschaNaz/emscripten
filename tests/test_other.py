@@ -522,7 +522,7 @@ f.close()
 
           # Run through node, if CMake produced a .js file.
           if output_file.endswith('.js'):
-            ret = Popen(NODE_JS + [tempdirname + '/' + output_file], stdout=PIPE, universal_newlines=True).communicate()[0]
+            ret = run_textmode(NODE_JS + [tempdirname + '/' + output_file], stdout=PIPE).stdout
             self.assertTextDataIdentical(open(cmakelistsdir + '/out.txt', 'r').read().strip(), ret.strip())
         finally:
           os.chdir(path_from_root('tests')) # Move away from the directory we are about to remove.
@@ -544,7 +544,7 @@ f.close()
       os.chdir(tempdirname_native)
       cmd = ['cmake', '-DCMAKE_C_COMPILER=' + CLANG_CC, '-DCMAKE_CXX_COMPILER=' + CLANG_CPP, path_from_root('tests', 'cmake', 'stdproperty')]
       print(str(cmd))
-      native_features = Popen(cmd, stdout=PIPE, universal_newlines=True).communicate()[0]
+      native_features = run_textmode(cmd, stdout=PIPE).stdout
     finally:
       os.chdir(tempdirname_emscripten)
       try:
@@ -559,7 +559,7 @@ f.close()
       os.chdir(tempdirname_emscripten)
       cmd = [emconfigure, 'cmake', path_from_root('tests', 'cmake', 'stdproperty')]
       print(str(cmd))
-      emscripten_features = Popen(cmd, stdout=PIPE, universal_newlines=True).communicate()[0]
+      emscripten_features = run_textmode(cmd, stdout=PIPE).stdout
     finally:
       os.chdir(path_from_root('tests'))
       try:
@@ -587,7 +587,7 @@ f.close()
         print(str(build))
         subprocess.check_call(build)
 
-        ret = Popen(NODE_JS + [os.path.join(tempdirname, 'cpp_with_emscripten_val.js')], stdout=PIPE, universal_newlines=True).communicate()[0].strip()
+        ret = run_textmode(NODE_JS + [os.path.join(tempdirname, 'cpp_with_emscripten_val.js')], stdout=PIPE).stdout.strip()
         if '-DNO_GNU_EXTENSIONS=1' in args:
           self.assertTextDataIdentical('Hello! __STRICT_ANSI__: 1, __cplusplus: 201103', ret)
         else:
@@ -649,9 +649,9 @@ f.close()
   def test_use_cxx(self):
     open('empty_file', 'w').write(' ')
     try:
-      dash_xc = Popen([PYTHON, EMCC, '-v', '-xc', 'empty_file'], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()[1]
+      dash_xc = run_textmode([PYTHON, EMCC, '-v', '-xc', 'empty_file'], stdout=PIPE, stderr=PIPE).stderr
       self.assertNotContained('-std=c++03', dash_xc)
-      dash_xcpp = Popen([PYTHON, EMCC, '-v', '-xc++', 'empty_file'], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()[1]
+      dash_xcpp = run_textmode([PYTHON, EMCC, '-v', '-xc++', 'empty_file'], stdout=PIPE, stderr=PIPE).stderr
       self.assertContained('-std=c++03', dash_xcpp)
     finally:
       try_delete('empty_file')
@@ -1237,7 +1237,7 @@ int f() {
     ''')
     open('my_test.input', 'w').write('abc')
     Building.emcc('main.cpp', ['--embed-file', 'my_test.input'], output_filename='a.out.js')
-    self.assertContained('zyx', Popen(JS_ENGINES[0] + ['a.out.js'], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()[0])
+    self.assertContained('zyx', run_textmode(JS_ENGINES[0] + ['a.out.js'], stdout=PIPE, stderr=PIPE).stdout)
 
   def test_abspaths(self):
     # Includes with absolute paths are generally dangerous, things like -I/usr/.. will get to system local headers, not our portable ones.
@@ -1419,7 +1419,7 @@ int f() {
     assert 'duplicate: common.o' not in err, err
     self.assertContained('a\nb...\n', run_js('a.out.js'))
 
-    text = Popen([PYTHON, EMAR, 't', 'liba.a'], stdout=PIPE, universal_newlines=True).communicate()[0]
+    text = run_textmode([PYTHON, EMAR, 't', 'liba.a'], stdout=PIPE).stdout
     assert 'common.o' not in text, text
     assert text.count('common_') == 2, text
     for line in text.split('\n'):
@@ -1643,16 +1643,16 @@ int f() {
   def test_libpng(self):
     shutil.copyfile(path_from_root('tests', 'pngtest.png'), 'pngtest.png')
     Building.emcc(path_from_root('tests','pngtest.c'), ['--embed-file', 'pngtest.png', '-s', 'USE_ZLIB=1', '-s', 'USE_LIBPNG=1'], output_filename='a.out.js')
-    self.assertContained('TESTS PASSED', Popen(JS_ENGINES[0] + ['a.out.js'], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()[0])
+    self.assertContained('TESTS PASSED', run_textmode(JS_ENGINES[0] + ['a.out.js'], stdout=PIPE, stderr=PIPE).stdout)
 
   def test_bullet(self):
     Building.emcc(path_from_root('tests','bullet_hello_world.cpp'), ['-s', 'USE_BULLET=1'], output_filename='a.out.js')
-    self.assertContained('BULLET RUNNING', Popen(JS_ENGINES[0] + ['a.out.js'], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()[0])
+    self.assertContained('BULLET RUNNING', run_textmode(JS_ENGINES[0] + ['a.out.js'], stdout=PIPE, stderr=PIPE).stdout)
 
   def test_vorbis(self):
     #This will also test if ogg compiles, because vorbis depends on ogg
     Building.emcc(path_from_root('tests','vorbis_test.c'), ['-s', 'USE_VORBIS=1'], output_filename='a.out.js')
-    self.assertContained('ALL OK', Popen(JS_ENGINES[0] + ['a.out.js'], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()[0])
+    self.assertContained('ALL OK', run_textmode(JS_ENGINES[0] + ['a.out.js'], stdout=PIPE, stderr=PIPE).stdout)
 
   def test_freetype(self):
     # copy the Liberation Sans Bold truetype file located in the <emscripten_root>/tests/freetype to the compilation folder
@@ -1672,7 +1672,7 @@ int f() {
                      '  *****   ***** \n' + \
                      '  ****+   +***+ \n' + \
                      '  +***+   +***+ \n'
-    self.assertContained(expectedOutput, Popen(JS_ENGINES[0] + ['a.out.js'], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()[0])
+    self.assertContained(expectedOutput, run_textmode(JS_ENGINES[0] + ['a.out.js'], stdout=PIPE, stderr=PIPE).stdout)
 
   def test_link_memcpy(self):
     # memcpy can show up *after* optimizations, so after our opportunity to link in libc, so it must be special-cased
@@ -1783,7 +1783,7 @@ int f() {
         return 0;
       }
     ''')
-    output = Popen([PYTHON, EMCC, os.path.join(self.get_dir(), 'main.cpp')], stderr=PIPE, universal_newlines=True).communicate()[1]
+    output = run_textmode([PYTHON, EMCC, os.path.join(self.get_dir(), 'main.cpp')], stderr=PIPE).stderr
     print(output)
     assert os.path.exists('a.out.js')
 
@@ -1979,7 +1979,7 @@ int f() {
 
       # test calling js optimizer
       print('  js')
-      output = Popen(NODE_JS + [path_from_root('tools', 'js-optimizer.js'), input] + passes, stdin=PIPE, stdout=PIPE, universal_newlines=True).communicate()[0]
+      output = run_textmode(NODE_JS + [path_from_root('tools', 'js-optimizer.js'), input] + passes, stdin=PIPE, stdout=PIPE).stdout
 
       def check_js(js, expected):
         #print >> sys.stderr, 'chak\n==========================\n', js, '\n===========================\n'
@@ -2039,15 +2039,15 @@ int f() {
         if 'last' not in passes and \
            'null_if' not in input and 'null_else' not in input:  # null-* tests are js optimizer or native, not a mixture (they mix badly)
           print('  native (receiveJSON)')
-          output = Popen([js_optimizer.get_native_optimizer(), input_temp + '.js'] + passes + ['receiveJSON', 'emitJSON'], stdin=PIPE, stdout=open(output_temp, 'w'), universal_newlines=True).communicate()[0]
+          output = run_textmode([js_optimizer.get_native_optimizer(), input_temp + '.js'] + passes + ['receiveJSON', 'emitJSON'], stdin=PIPE, stdout=open(output_temp, 'w')).stdout
           check_json()
 
           print('  native (parsing JS)')
-          output = Popen([js_optimizer.get_native_optimizer(), input] + passes + ['emitJSON'], stdin=PIPE, stdout=open(output_temp, 'w'), universal_newlines=True).communicate()[0]
+          output = run_textmode([js_optimizer.get_native_optimizer(), input] + passes + ['emitJSON'], stdin=PIPE, stdout=open(output_temp, 'w')).stdout
           check_json()
 
         print('  native (emitting JS)')
-        output = Popen([js_optimizer.get_native_optimizer(), input] + passes, stdin=PIPE, stdout=PIPE, universal_newlines=True).communicate()[0]
+        output = run_textmode([js_optimizer.get_native_optimizer(), input] + passes, stdin=PIPE, stdout=PIPE).stdout
         check_js(output, expected)
 
   def test_m_mm(self):
@@ -2191,7 +2191,7 @@ seeked= file.
     self.assertContained('texte\n', output[1])
 
   def test_emconfig(self):
-    output = Popen([PYTHON, EMCONFIG, 'LLVM_ROOT'], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()[0].strip()
+    output = run_textmode([PYTHON, EMCONFIG, 'LLVM_ROOT'], stdout=PIPE, stderr=PIPE).stdout.strip()
     try:
       assert output == LLVM_ROOT
     except:
@@ -2199,16 +2199,16 @@ seeked= file.
       raise
     invalid = 'Usage: em-config VAR_NAME'
     # Don't accept variables that do not exist
-    output = Popen([PYTHON, EMCONFIG, 'VAR_WHICH_DOES_NOT_EXIST'], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()[0].strip()
+    output = run_textmode([PYTHON, EMCONFIG, 'VAR_WHICH_DOES_NOT_EXIST'], stdout=PIPE, stderr=PIPE).stdout.strip()
     assert output == invalid
     # Don't accept no arguments
-    output = Popen([PYTHON, EMCONFIG], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()[0].strip()
+    output = run_textmode([PYTHON, EMCONFIG], stdout=PIPE, stderr=PIPE).stdout.strip()
     assert output == invalid
     # Don't accept more than one variable
-    output = Popen([PYTHON, EMCONFIG, 'LLVM_ROOT', 'EMCC'], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()[0].strip()
+    output = run_textmode([PYTHON, EMCONFIG, 'LLVM_ROOT', 'EMCC'], stdout=PIPE, stderr=PIPE).stdout.strip()
     assert output == invalid
     # Don't accept arbitrary python code
-    output = Popen([PYTHON, EMCONFIG, 'sys.argv[1]'], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()[0].strip()
+    output = run_textmode([PYTHON, EMCONFIG, 'sys.argv[1]'], stdout=PIPE, stderr=PIPE).stdout.strip()
     assert output == invalid
 
   def test_link_s(self):
@@ -4059,14 +4059,14 @@ EMSCRIPTEN_KEEPALIVE __EMSCRIPTEN_major__ __EMSCRIPTEN_minor__ __EMSCRIPTEN_tiny
 ''')
     def test(args=[]):
       print(args)
-      out = Popen([PYTHON, EMCC, 'src.cpp', '-E'] + args, stdout=PIPE, universal_newlines=True).communicate()[0]
+      out = run_textmode([PYTHON, EMCC, 'src.cpp', '-E'] + args, stdout=PIPE).stdout
       self.assertContained(r'''__attribute__((used)) %d %d %d __attribute__((used))''' % (EMSCRIPTEN_VERSION_MAJOR, EMSCRIPTEN_VERSION_MINOR, EMSCRIPTEN_VERSION_TINY), out)
     test()
     test(['--bind'])
 
   def test_dashE_consistent(self): # issue #3365
-    normal = Popen([PYTHON, EMXX, '-v', '-Wwarn-absolute-paths', path_from_root('tests', 'hello_world.cpp'), '-c'], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()[1]
-    dash_e = Popen([PYTHON, EMXX, '-v', '-Wwarn-absolute-paths', path_from_root('tests', 'hello_world.cpp'), '-E'], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()[1]
+    normal = run_textmode([PYTHON, EMXX, '-v', '-Wwarn-absolute-paths', path_from_root('tests', 'hello_world.cpp'), '-c'], stdout=PIPE, stderr=PIPE).stderr
+    dash_e = run_textmode([PYTHON, EMXX, '-v', '-Wwarn-absolute-paths', path_from_root('tests', 'hello_world.cpp'), '-E'], stdout=PIPE, stderr=PIPE).stderr
 
     import difflib
     diff = [a.rstrip()+'\n' for a in difflib.unified_diff(normal.split('\n'), dash_e.split('\n'), fromfile='normal', tofile='dash_e')]
@@ -4077,18 +4077,18 @@ EMSCRIPTEN_KEEPALIVE __EMSCRIPTEN_major__ __EMSCRIPTEN_minor__ __EMSCRIPTEN_tiny
     assert len(bad) == 0, '\n\n'.join(diff)
 
   def test_dashE_respect_dashO(self): # issue #3365
-    with_dash_o = Popen([PYTHON, EMXX, path_from_root('tests', 'hello_world.cpp'), '-E', '-o', '/dev/null'], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()[0]
-    without_dash_o = Popen([PYTHON, EMXX, path_from_root('tests', 'hello_world.cpp'), '-E'], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()[0]
+    with_dash_o = run_textmode([PYTHON, EMXX, path_from_root('tests', 'hello_world.cpp'), '-E', '-o', '/dev/null'], stdout=PIPE, stderr=PIPE).stdout
+    without_dash_o = run_textmode([PYTHON, EMXX, path_from_root('tests', 'hello_world.cpp'), '-E'], stdout=PIPE, stderr=PIPE).stdout
     assert len(with_dash_o) == 0
     assert len(without_dash_o) != 0
 
   def test_dashM(self):
-    out = Popen([PYTHON, EMXX, path_from_root('tests', 'hello_world.cpp'), '-M'], stdout=PIPE, universal_newlines=True).communicate()[0]
+    out = run_textmode([PYTHON, EMXX, path_from_root('tests', 'hello_world.cpp'), '-M'], stdout=PIPE).stdout
     self.assertContained('hello_world.o:', out) # Verify output is just a dependency rule instead of bitcode or js
 
   def test_dashM_consistent(self):
-    normal = Popen([PYTHON, EMXX, '-v', '-Wwarn-absolute-paths', path_from_root('tests', 'hello_world.cpp'), '-c'], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()[1]
-    dash_m = Popen([PYTHON, EMXX, '-v', '-Wwarn-absolute-paths', path_from_root('tests', 'hello_world.cpp'), '-M'], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()[1]
+    normal = run_textmode([PYTHON, EMXX, '-v', '-Wwarn-absolute-paths', path_from_root('tests', 'hello_world.cpp'), '-c'], stdout=PIPE, stderr=PIPE).stderr
+    dash_m = run_textmode([PYTHON, EMXX, '-v', '-Wwarn-absolute-paths', path_from_root('tests', 'hello_world.cpp'), '-M'], stdout=PIPE, stderr=PIPE).stderr
 
     import difflib
     diff = [a.rstrip()+'\n' for a in difflib.unified_diff(normal.split('\n'), dash_m.split('\n'), fromfile='normal', tofile='dash_m')]
@@ -4099,8 +4099,8 @@ EMSCRIPTEN_KEEPALIVE __EMSCRIPTEN_major__ __EMSCRIPTEN_minor__ __EMSCRIPTEN_tiny
     assert len(bad) == 0, '\n\n'.join(diff)
 
   def test_dashM_respect_dashO(self):
-    with_dash_o = Popen([PYTHON, EMXX, path_from_root('tests', 'hello_world.cpp'), '-M', '-o', '/dev/null'], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()[0]
-    without_dash_o = Popen([PYTHON, EMXX, path_from_root('tests', 'hello_world.cpp'), '-M'], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()[0]
+    with_dash_o = run_textmode([PYTHON, EMXX, path_from_root('tests', 'hello_world.cpp'), '-M', '-o', '/dev/null'], stdout=PIPE, stderr=PIPE).stdout
+    without_dash_o = run_textmode([PYTHON, EMXX, path_from_root('tests', 'hello_world.cpp'), '-M'], stdout=PIPE, stderr=PIPE).stdout
     assert len(with_dash_o) == 0
     assert len(without_dash_o) != 0
 
