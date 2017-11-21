@@ -7492,18 +7492,18 @@ int main() {
   def test_binaryen_invalid_mem(self):
       ret = subprocess.check_call([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-s', 'WASM=1', '-s', 'TOTAL_MEMORY=33MB'])
 
-      ret = subprocess.Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-s', 'WASM=1', '-s', 'TOTAL_MEMORY=32MB+1'], stderr=subprocess.PIPE, universal_newlines=True).communicate()[1]
+      ret = run_textmode([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-s', 'WASM=1', '-s', 'TOTAL_MEMORY=32MB+1'], stderr=subprocess.PIPE).stderr
       assert 'TOTAL_MEMORY must be a multiple of 64KB' in ret, ret
 
       ret = subprocess.check_call([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-s', 'TOTAL_MEMORY=32MB'])
 
-      ret = subprocess.Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-s', 'TOTAL_MEMORY=33MB'], stderr=subprocess.PIPE, universal_newlines=True).communicate()[1]
+      ret = run_textmode([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-s', 'TOTAL_MEMORY=33MB'], stderr=subprocess.PIPE).stderr
       assert 'TOTAL_MEMORY must be a multiple of 16MB' in ret, ret
 
-      ret = subprocess.Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-s', 'WASM_MEM_MAX=33MB'], stderr=subprocess.PIPE, universal_newlines=True).communicate()[1]
+      ret = run_textmode([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-s', 'WASM_MEM_MAX=33MB'], stderr=subprocess.PIPE).stderr
       assert 'WASM_MEM_MAX must be a multiple of 64KB' not in ret, ret
 
-      ret = subprocess.Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-s', 'WASM_MEM_MAX=33MB+1'], stderr=subprocess.PIPE, universal_newlines=True).communicate()[1]
+      ret = run_textmode([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-s', 'WASM_MEM_MAX=33MB+1'], stderr=subprocess.PIPE).stderr
       assert 'WASM_MEM_MAX must be a multiple of 64KB' in ret, ret
 
   def test_binaryen_ctors(self):
