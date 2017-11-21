@@ -1775,7 +1775,7 @@ int main() {
   @no_emterpreter
   def test_biggerswitch(self):
     num_cases = 20000
-    switch_case, err = Popen([PYTHON, path_from_root('tests', 'gen_large_switchcase.py'), str(num_cases)], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()
+    switch_case, err = run_textmode_tuple([PYTHON, path_from_root('tests', 'gen_large_switchcase.py'), str(num_cases)], stdout=PIPE, stderr=PIPE)
     self.do_run(switch_case, '''58996: 589965899658996
 59297: 592975929759297
 59598: default
@@ -2007,7 +2007,7 @@ The current type of b is: 9
       Building.link([supp_name + '.o', main_name + '.o'], all_name)
 
       # This will fail! See explanation near the warning we check for, in the compiler source code
-      output = Popen([PYTHON, EMCC, all_name], stderr=PIPE, universal_newlines=True).communicate()
+      output = run_textmode_tuple([PYTHON, EMCC, all_name], stderr=PIPE)
 
       # Check for warning in the generated code
       generated = open(os.path.join(self.get_dir(), 'src.cpp.o.js')).read()
@@ -5087,7 +5087,7 @@ return malloc(size);
   @SIMD
   def test_sse1_full(self):
     Popen([CLANG, path_from_root('tests', 'test_sse1_full.cpp'), '-o', 'test_sse1_full', '-D_CRT_SECURE_NO_WARNINGS=1'] + get_clang_native_args(), env=get_clang_native_env(), stdout=PIPE).communicate()
-    native_result, err = Popen('./test_sse1_full', stdout=PIPE, universal_newlines=True).communicate()
+    native_result, err = run_textmode_tuple('./test_sse1_full', stdout=PIPE)
     native_result = native_result.replace('\r\n', '\n') # Windows line endings fix
 
     Settings.PRECISE_F32 = 1 # SIMD currently requires Math.fround
@@ -5110,7 +5110,7 @@ return malloc(size);
     args = []
     if '-O0' in self.emcc_args: args += ['-D_DEBUG=1']
     Popen([CLANG, path_from_root('tests', 'test_sse2_full.cpp'), '-o', 'test_sse2_full', '-D_CRT_SECURE_NO_WARNINGS=1'] + args + get_clang_native_args(), env=get_clang_native_env(), stdout=PIPE).communicate()
-    native_result, err = Popen('./test_sse2_full', stdout=PIPE, universal_newlines=True).communicate()
+    native_result, err = run_textmode_tuple('./test_sse2_full', stdout=PIPE)
     native_result = native_result.replace('\r\n', '\n') # Windows line endings fix
 
     Settings.PRECISE_F32 = 1 # SIMD currently requires Math.fround
@@ -5128,7 +5128,7 @@ return malloc(size);
     args = []
     if '-O0' in self.emcc_args: args += ['-D_DEBUG=1']
     Popen([CLANG, path_from_root('tests', 'test_sse3_full.cpp'), '-o', 'test_sse3_full', '-D_CRT_SECURE_NO_WARNINGS=1', '-msse3'] + args + get_clang_native_args(), env=get_clang_native_env(), stdout=PIPE).communicate()
-    native_result, err = Popen('./test_sse3_full', stdout=PIPE, universal_newlines=True).communicate()
+    native_result, err = run_textmode_tuple('./test_sse3_full', stdout=PIPE)
     native_result = native_result.replace('\r\n', '\n') # Windows line endings fix
 
     Settings.PRECISE_F32 = 1 # SIMD currently requires Math.fround
@@ -5142,7 +5142,7 @@ return malloc(size);
     args = []
     if '-O0' in self.emcc_args: args += ['-D_DEBUG=1']
     Popen([CLANG, path_from_root('tests', 'test_ssse3_full.cpp'), '-o', 'test_ssse3_full', '-D_CRT_SECURE_NO_WARNINGS=1', '-mssse3'] + args + get_clang_native_args(), env=get_clang_native_env(), stdout=PIPE).communicate()
-    native_result, err = Popen('./test_ssse3_full', stdout=PIPE, universal_newlines=True).communicate()
+    native_result, err = run_textmode_tuple('./test_ssse3_full', stdout=PIPE)
     native_result = native_result.replace('\r\n', '\n') # Windows line endings fix
 
     Settings.PRECISE_F32 = 1 # SIMD currently requires Math.fround
@@ -5156,7 +5156,7 @@ return malloc(size);
     args = []
     if '-O0' in self.emcc_args: args += ['-D_DEBUG=1']
     Popen([CLANG, path_from_root('tests', 'test_sse4_1_full.cpp'), '-o', 'test_sse4_1_full', '-D_CRT_SECURE_NO_WARNINGS=1', '-msse4.1'] + args + get_clang_native_args(), env=get_clang_native_env(), stdout=PIPE).communicate()
-    native_result, err = Popen('./test_sse4_1_full', stdout=PIPE, universal_newlines=True).communicate()
+    native_result, err = run_textmode_tuple('./test_sse4_1_full', stdout=PIPE)
     native_result = native_result.replace('\r\n', '\n') # Windows line endings fix
 
     Settings.PRECISE_F32 = 1 # SIMD currently requires Math.fround
