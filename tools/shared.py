@@ -2553,8 +2553,17 @@ def run_base(cmd, check=False, *args, **kw):
     result.check_returncode()
   return result
 
+def run_logging(cmd, *args, **kw):
+  try:
+    result = run_base(cmd, *args, **kw)
+    logging.debug("Successfuly executed %s" % " ".join(cmd))
+    return result
+  except subprocess.CalledProcessError as e:
+    logging.error("'%s' failed with output:\n%s" % (" ".join(e.cmd), e.output))
+    raise e
+
 def run_textmode(cmd, *args, **kw):
-  return run_base(cmd, universal_newlines=True, *args, **kw)
+  return run_logging(cmd, universal_newlines=True, *args, **kw)
 
 def run_textmode_tuple(cmd, *args, **kw):
   result = run_textmode(cmd, *args, **kw)
@@ -2567,7 +2576,7 @@ def check_run(cmd, *args, **kw):
     return result
   except subprocess.CalledProcessError as e:
     logging.error("'%s' failed with output:\n%s" % (" ".join(e.cmd), e.output))
-    raise
+    raise e
 
 def execute(cmd, *args, **kw):
   try:
@@ -2583,11 +2592,12 @@ def check_execute(cmd, *args, **kw):
   # TODO: use in more places. execute doesn't actually check that return values
   # are nonzero
   try:
-    subprocess.check_output(cmd, *args, **kw)
+    result = subprocess.check_output(cmd, *args, **kw)
     logging.debug("Successfuly executed %s" % " ".join(cmd))
+    return result
   except subprocess.CalledProcessError as e:
     logging.error("'%s' failed with output:\n%s" % (" ".join(e.cmd), e.output))
-    raise
+    raise e
 
 def check_call(cmd, *args, **kw):
   try:
