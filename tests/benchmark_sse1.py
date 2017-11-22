@@ -25,8 +25,7 @@ if WINDOWS: out_file += '.exe'
 cmd = [CLANG_CPP] + get_clang_native_args() + [path_from_root('tests', 'benchmark_sse1.cpp'), '-O3', '-o', out_file]
 print 'Building native version of the benchmark:'
 print ' '.join(cmd)
-build = Popen(cmd, env=get_clang_native_env(), universal_newlines=True)
-out = build.communicate()
+build = run_textmode(cmd, env=get_clang_native_env())
 if build.returncode != 0:
     sys.exit(1)
 
@@ -38,8 +37,7 @@ out_file = os.path.join(temp_dir, 'benchmark_sse1_html.html')
 cmd = [PYTHON, EMCC, path_from_root('tests', 'benchmark_sse1.cpp'), '-O3', '-msse', '--emrun', '-s', 'TOTAL_MEMORY=536870912', '-o', out_file]
 print 'Building Emscripten version of the benchmark:'
 print ' '.join(cmd)
-build = Popen(cmd, universal_newlines=True)
-out = build.communicate()
+build = run_textmode(cmd)
 if build.returncode != 0:
     sys.exit(1)
 

@@ -74,11 +74,10 @@ class NativeBenchmarker(Benchmarker):
     if not native_exec:
       compiler = self.cxx if filename.endswith('cpp') else self.cc
       cmd = [compiler, '-fno-math-errno', filename, '-o', filename+'.native'] + self.args + shared_args + native_args + get_clang_native_args()
-      process = Popen(cmd, stdout=PIPE, stderr=parent.stderr_redirect, env=get_clang_native_env(), universal_newlines=True)
-      output = process.communicate()
+      process = run_textmode(cmd, stdout=PIPE, stderr=parent.stderr_redirect, env=get_clang_native_env())
       if process.returncode is not 0:
         print("Building native executable with command failed", ' '.join(cmd), file=sys.stderr)
-        print("Output: " + str(output[0]) + '\n' + str(output[1]))
+        print("Output: " + str(process.stdout) + '\n' + str(process.stderr))
     else:
       shutil.copyfile(native_exec, filename + '.native')
       shutil.copymode(native_exec, filename + '.native')
@@ -88,8 +87,7 @@ class NativeBenchmarker(Benchmarker):
     self.filename = final
 
   def run(self, args):
-    process = Popen([self.filename] + args, stdout=PIPE, stderr=PIPE, universal_newlines=True)
-    return process.communicate()[0]
+    return run_textmode([self.filename] + args, stdout=PIPE, stderr=PIPE).stdout
 
 class JSBenchmarker(Benchmarker):
   def __init__(self, name, engine, extra_args=[], env={}):
@@ -119,7 +117,7 @@ process(sys.argv[1])
     final = os.path.dirname(filename) + os.path.sep + self.name + ('_' if self.name else '') + os.path.basename(filename) + '.js'
     final = final.replace('.cpp', '')
     try_delete(final)
-    output = Popen([PYTHON, EMCC, filename, #'-O3',
+    output = run_textmode([PYTHON, EMCC, filename, #'-O3',
                     '-O3', '-s', 'DOUBLE_MODE=0', '-s', 'PRECISE_I64_MATH=0',
                     '--memory-init-file', '0', '--js-transform', 'python hardcode.py',
                     '-s', 'TOTAL_MEMORY=256*1024*1024',
@@ -127,8 +125,8 @@ process(sys.argv[1])
                     '-s', 'BENCHMARK=%d' % (1 if IGNORE_COMPILATION and not has_output_parser else 0),
                     #'--profiling',
                     #'--closure', '1',
-                    '-o', final] + shared_args + emcc_args + self.extra_args, stdout=PIPE, stderr=PIPE, env=self.env, universal_newlines=True).communicate()
-    assert os.path.exists(final), 'Failed to compile file: ' + output[0] + ' (looked for ' + final + ')'
+                    '-o', final] + shared_args + emcc_args + self.extra_args, stdout=PIPE, stderr=PIPE, env=self.env)
+    assert os.path.exists(final), 'Failed to compile file: ' + output.stdout + ' (looked for ' + final + ')'
     self.filename = final
 
   def run(self, args):

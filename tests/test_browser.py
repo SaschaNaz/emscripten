@@ -2196,7 +2196,7 @@ void *getBindBuffer() {
 
   def test_emrun_info(self):
     if not has_browser(): return self.skip('need a browser')
-    result = subprocess.check_output([PYTHON, path_from_root('emrun'), '--system_info', '--browser_info'], universal_newlines=True)
+    result = check_execute([PYTHON, path_from_root('emrun'), '--system_info', '--browser_info'])
     assert 'CPU' in result
     assert 'Browser' in result
     assert 'Traceback' not in result
@@ -3004,9 +3004,9 @@ window.close = function() {
 
   def test_webidl(self):
     # see original in test_core.py
-    output = Popen([PYTHON, path_from_root('tools', 'webidl_binder.py'),
+    check_execute([PYTHON, path_from_root('tools', 'webidl_binder.py'),
                             path_from_root('tests', 'webidl', 'test.idl'),
-                            'glue'], universal_newlines=True).communicate()[0]
+                            'glue'])
     assert os.path.exists('glue.cpp')
     assert os.path.exists('glue.js')
     for opts in [[], ['-O1'], ['-O2']]:
