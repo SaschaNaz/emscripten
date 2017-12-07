@@ -1414,7 +1414,7 @@ int f() {
         b();
       }
     ''')
-    out, err = Popen([PYTHON, EMCC, 'main.c', '-L.', '-la'], stderr=PIPE, universal_newlines=True).communicate()
+    err = run_process([PYTHON, EMCC, 'main.c', '-L.', '-la'], stderr=PIPE).stderr
     assert 'loading from archive' not in err, err
     assert 'which has duplicate entries' not in err, err
     assert 'duplicate: common.o' not in err, err
@@ -1428,7 +1428,7 @@ int f() {
 
     # make the hashing fail: 'q' is just a quick append, no replacement, so hashing is not done, and dupes are easy
     Popen([PYTHON, EMAR, 'q', 'liba.a', 'common.o', os.path.join('libdir', 'common.o')]).communicate()
-    out, err = Popen([PYTHON, EMCC, 'main.c', '-L.', '-la'], stderr=PIPE, universal_newlines=True).communicate()
+    err = run_process([PYTHON, EMCC, 'main.c', '-L.', '-la'], stderr=PIPE).stderr
     assert 'loading from archive' in err, err
     assert 'which has duplicate entries' in err, err
     assert 'duplicate: common.o' in err, err
@@ -2367,7 +2367,7 @@ done.
   def test_preprocess(self):
     self.clear()
 
-    out, err = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-E'], stdout=PIPE, universal_newlines=True).communicate()
+    out = run_process([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-E'], stdout=PIPE).stdout
     assert not os.path.exists('a.out.js')
     # Test explicitly that the output contains a line typically written by the preprocessor.
     # Clang outputs on Windows lines like "#line 1", on Unix '# 1 '.
@@ -2984,7 +2984,7 @@ int main() {
     open('lib.js', 'w').write(r'''
 printErr('dir was ' + process.env.EMCC_BUILD_DIR);
 ''')
-    out, err = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.cpp'), '--js-library', 'lib.js'], stderr=PIPE, universal_newlines=True).communicate()
+    err = run_process([PYTHON, EMCC, path_from_root('tests', 'hello_world.cpp'), '--js-library', 'lib.js'], stderr=PIPE).stderr
     self.assertContained('dir was ' + os.path.realpath(os.path.normpath(self.get_dir())), err)
 
   def test_float_h(self):
@@ -4538,11 +4538,11 @@ Size of file is: 32
 
   def test_emcc_s_typo(self):
     # with suggestions
-    out, err = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-s', 'DISABLE_EXCEPTION_CATCH=1'], stderr=PIPE, universal_newlines=True).communicate()
+    err = run_process([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-s', 'DISABLE_EXCEPTION_CATCH=1'], stderr=PIPE).stderr
     self.assertContained(r'''Assigning a non-existent settings attribute "DISABLE_EXCEPTION_CATCH"''', err)
     self.assertContained(r'''did you mean one of DISABLE_EXCEPTION_CATCHING?''', err)
     # no suggestions
-    out, err = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-s', 'CHEEZ=1'], stderr=PIPE, universal_newlines=True).communicate()
+    err = run_process([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-s', 'CHEEZ=1'], stderr=PIPE).stderr
     self.assertContained(r'''perhaps a typo in emcc's  -s X=Y  notation?''', err)
     self.assertContained(r'''(see src/settings.js for valid values)''', err)
 
@@ -5265,7 +5265,7 @@ function _main() {
       print('log test', source, expected)
       try:
         os.environ['EMCC_LOG_EMTERPRETER_CODE'] = '1'
-        out, err = Popen([PYTHON, EMCC, source, '-O3', '-s', 'EMTERPRETIFY=1'], stderr=PIPE, universal_newlines=True).communicate()
+        err = run_process([PYTHON, EMCC, source, '-O3', '-s', 'EMTERPRETIFY=1'], stderr=PIPE).stderr
       finally:
         del os.environ['EMCC_LOG_EMTERPRETER_CODE']
       lines = err.split('\n')
@@ -5284,10 +5284,10 @@ function _main() {
     do_log_test(path_from_root('tests', 'fannkuch.cpp'), list(range(226, 235)), '__Z15fannkuch_workerPv')
 
   def test_emterpreter_advise(self):
-    out, err = Popen([PYTHON, EMCC, path_from_root('tests', 'emterpreter_advise.cpp'), '-s', 'EMTERPRETIFY=1', '-s', 'EMTERPRETIFY_ASYNC=1', '-s', 'EMTERPRETIFY_ADVISE=1'], stdout=PIPE, universal_newlines=True).communicate()
+    out = run_process([PYTHON, EMCC, path_from_root('tests', 'emterpreter_advise.cpp'), '-s', 'EMTERPRETIFY=1', '-s', 'EMTERPRETIFY_ASYNC=1', '-s', 'EMTERPRETIFY_ADVISE=1'], stdout=PIPE).stdout
     self.assertContained('-s EMTERPRETIFY_WHITELIST=\'["__Z6middlev", "__Z7sleeperv", "__Z8recurserv", "_main"]\'', out)
 
-    out, err = Popen([PYTHON, EMCC, path_from_root('tests', 'emterpreter_advise_funcptr.cpp'), '-s', 'EMTERPRETIFY=1', '-s', 'EMTERPRETIFY_ASYNC=1', '-s', 'EMTERPRETIFY_ADVISE=1'], stdout=PIPE, universal_newlines=True).communicate()
+    out = run_process([PYTHON, EMCC, path_from_root('tests', 'emterpreter_advise_funcptr.cpp'), '-s', 'EMTERPRETIFY=1', '-s', 'EMTERPRETIFY_ASYNC=1', '-s', 'EMTERPRETIFY_ADVISE=1'], stdout=PIPE).stdout
     self.assertContained('-s EMTERPRETIFY_WHITELIST=\'["__Z4posti", "__Z5post2i", "__Z6middlev", "__Z7sleeperv", "__Z8recurserv", "_main"]\'', out)
 
   def test_link_with_a_static(self):
@@ -5567,7 +5567,7 @@ print(os.environ.get('NM'))
       for opts in [0, 1, 2, 's']:
         print(source, opts)
         self.clear()
-        out, err = Popen([PYTHON, EMCC, source, '-O' + str(opts)], stderr=PIPE, universal_newlines=True).communicate()
+        err = run_process([PYTHON, EMCC, source, '-O' + str(opts)], stderr=PIPE).stderr
         assert os.path.exists('a.out.js')
         assert ('emitted code will contain very large numbers of local variables' in err) == (warn and (opts in [0, 1]))
 
@@ -6353,7 +6353,7 @@ Resolved: "/" => "/"
     # build once before to make sure system libs etc. exist
     subprocess.check_call([PYTHON, EMCC, path_from_root('tests', 'hello_libcxx.cpp')])
     # check that there is nothing in stderr for a regular compile
-    out, err = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_libcxx.cpp')], stderr=PIPE, universal_newlines=True).communicate()
+    err = run_process([PYTHON, EMCC, path_from_root('tests', 'hello_libcxx.cpp')], stderr=PIPE).stderr
     assert err == '', err
 
   def test_emterpreter_file_suggestion(self):
@@ -6922,7 +6922,7 @@ int main() {
   }, int64_t(0x12345678ABCDEF1FLL));
 }
 ''')
-    out, err = Popen([PYTHON, EMCC, 'src.cpp', '-Oz'], stderr=PIPE, universal_newlines=True).communicate()
+    err = run_process([PYTHON, EMCC, 'src.cpp', '-Oz'], stderr=PIPE).stderr
     self.assertContained('LLVM ERROR: EM_ASM should not receive i64s as inputs, they are not valid in JS', err)
 
   def test_eval_ctors(self):
@@ -7020,7 +7020,7 @@ C c;
 int main() {}
       ''')
       with clean_write_access_to_canonical_temp_dir():
-        out, err = Popen([PYTHON, EMCC, 'src.cpp', '-Oz'], stderr=PIPE, universal_newlines=True).communicate()
+        err = run_process([PYTHON, EMCC, 'src.cpp', '-Oz'], stderr=PIPE).stderr
       self.assertContained('___syscall54', err) # the failing call should be mentioned
       self.assertContained('ctorEval.js', err) # with a stack trace
       self.assertContained('ctor_evaller: not successful', err) # with logging
