@@ -5853,7 +5853,7 @@ def process(filename):
   # Autodebug the code
   def do_autodebug(self, filename):
     Building.llvm_dis(filename)
-    output = Popen([PYTHON, AUTODEBUGGER, filename+'.o.ll', filename+'.o.ll.ll'], stdout=PIPE, stderr=self.stderr_redirect, universal_newlines=True).communicate()[0]
+    output = run_process([PYTHON, AUTODEBUGGER, filename+'.o.ll', filename+'.o.ll.ll'], stdout=PIPE, stderr=self.stderr_redirect).stdout
     assert 'Success.' in output, output
     self.prep_ll_run(filename, filename+'.o.ll.ll', force_recompile=True) # rebuild .bc # TODO: use code in do_autodebug_post for this
 
@@ -5865,7 +5865,7 @@ def process(filename):
       return True
     print('Autodebugging during post time')
     delattr(self, 'post')
-    output = Popen([PYTHON, AUTODEBUGGER, filename+'.o.ll', filename+'.o.ll.ll'], stdout=PIPE, stderr=self.stderr_redirect, universal_newlines=True).communicate()[0]
+    output = run_process([PYTHON, AUTODEBUGGER, filename+'.o.ll', filename+'.o.ll.ll'], stdout=PIPE, stderr=self.stderr_redirect).stdout
     assert 'Success.' in output, output
     shutil.copyfile(filename + '.o.ll.ll', filename + '.o.ll')
     Building.llvm_as(filename)
