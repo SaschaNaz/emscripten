@@ -217,6 +217,12 @@ def run_base(cmd, check=False, *args, **kw):
 def run_process(cmd, universal_newlines=True, check=True, *args, **kw):
   return run_base(cmd, universal_newlines=universal_newlines, check=check, *args, **kw)
 
+# Compatibility function that returns same tuple as Popen().communicate() does
+# to ease migration in test sets
+def run_process_compat(*args, **kw):
+  completed = run_base(*args, **kw)
+  return (completed.stdout, completed.stderr)
+
 def execute(cmd, *args, **kw):
   try:
     cmd[0] = Building.remove_quotes(cmd[0])
