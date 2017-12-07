@@ -1048,7 +1048,7 @@ int main() {
 
     def test(lib_args, err_expected):
       print(err_expected)
-      output = run_process([PYTHON, EMCC, main_name, '-o', 'a.out.js'] + lib_args, stdout=PIPE, stderr=PIPE)
+      output = run_process([PYTHON, EMCC, main_name, '-o', 'a.out.js'] + lib_args, stdout=PIPE, stderr=PIPE, check=not err_expected)
       #print output.stderr
       if err_expected:
         self.assertContained(err_expected, output.stderr)
@@ -1134,7 +1134,7 @@ int f() {
 
     # lib_a does not satisfy any symbols from main, so it will not be included,
     # and there will be an unresolved symbol.
-    output = run_process([PYTHON, EMCC] + args + libs_list, stdout=PIPE, stderr=PIPE)
+    output = run_process([PYTHON, EMCC] + args + libs_list, stdout=PIPE, stderr=PIPE, check=False)
     self.assertContained('error: unresolved symbol: x', output.stderr)
 
     # -Wl,--start-group and -Wl,--end-group around the libs will cause a rescan
@@ -1745,7 +1745,7 @@ int f() {
           clear()
           print('warn', args, action, value)
           extra = ['-s', action + '_ON_UNDEFINED_SYMBOLS=%d' % value] if action else []
-          output = run_process([PYTHON, EMCC, os.path.join(self.get_dir(), 'main.cpp')] + extra + args, stderr=PIPE)
+          output = run_process([PYTHON, EMCC, os.path.join(self.get_dir(), 'main.cpp')] + extra + args, stderr=PIPE, check=False)
           if action == None or (action == 'WARN' and value):
             self.assertContained('unresolved symbol: something', output.stderr)
             self.assertContained('unresolved symbol: elsey', output.stderr)
@@ -2203,16 +2203,16 @@ seeked= file.
       raise
     invalid = 'Usage: em-config VAR_NAME'
     # Don't accept variables that do not exist
-    output = run_process([PYTHON, EMCONFIG, 'VAR_WHICH_DOES_NOT_EXIST'], stdout=PIPE, stderr=PIPE).stdout.strip()
+    output = run_process([PYTHON, EMCONFIG, 'VAR_WHICH_DOES_NOT_EXIST'], stdout=PIPE, stderr=PIPE, check=False).stdout.strip()
     assert output == invalid
     # Don't accept no arguments
-    output = run_process([PYTHON, EMCONFIG], stdout=PIPE, stderr=PIPE).stdout.strip()
+    output = run_process([PYTHON, EMCONFIG], stdout=PIPE, stderr=PIPE, check=False).stdout.strip()
     assert output == invalid
     # Don't accept more than one variable
-    output = run_process([PYTHON, EMCONFIG, 'LLVM_ROOT', 'EMCC'], stdout=PIPE, stderr=PIPE).stdout.strip()
+    output = run_process([PYTHON, EMCONFIG, 'LLVM_ROOT', 'EMCC'], stdout=PIPE, stderr=PIPE, check=False).stdout.strip()
     assert output == invalid
     # Don't accept arbitrary python code
-    output = run_process([PYTHON, EMCONFIG, 'sys.argv[1]'], stdout=PIPE, stderr=PIPE).stdout.strip()
+    output = run_process([PYTHON, EMCONFIG, 'sys.argv[1]'], stdout=PIPE, stderr=PIPE, check=False).stdout.strip()
     assert output == invalid
 
   def test_link_s(self):
@@ -7507,18 +7507,18 @@ int main() {
   def test_binaryen_invalid_mem(self):
       ret = subprocess.check_call([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-s', 'WASM=1', '-s', 'TOTAL_MEMORY=33MB'])
 
-      ret = run_process([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-s', 'WASM=1', '-s', 'TOTAL_MEMORY=32MB+1'], stderr=subprocess.PIPE).stderr
+      ret = run_process([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-s', 'WASM=1', '-s', 'TOTAL_MEMORY=32MB+1'], stderr=subprocess.PIPE, check=False).stderr
       assert 'TOTAL_MEMORY must be a multiple of 64KB' in ret, ret
 
       ret = subprocess.check_call([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-s', 'TOTAL_MEMORY=32MB'])
 
-      ret = run_process([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-s', 'TOTAL_MEMORY=33MB'], stderr=subprocess.PIPE).stderr
+      ret = run_process([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-s', 'TOTAL_MEMORY=33MB'], stderr=subprocess.PIPE, check=False).stderr
       assert 'TOTAL_MEMORY must be a multiple of 16MB' in ret, ret
 
-      ret = run_process([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-s', 'WASM_MEM_MAX=33MB'], stderr=subprocess.PIPE).stderr
+      ret = run_process([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-s', 'WASM_MEM_MAX=33MB'], stderr=subprocess.PIPE, check=False).stderr
       assert 'WASM_MEM_MAX must be a multiple of 64KB' not in ret, ret
 
-      ret = run_process([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-s', 'WASM_MEM_MAX=33MB+1'], stderr=subprocess.PIPE).stderr
+      ret = run_process([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-s', 'WASM_MEM_MAX=33MB+1'], stderr=subprocess.PIPE, check=False).stderr
       assert 'WASM_MEM_MAX must be a multiple of 64KB' in ret, ret
 
   def test_binaryen_ctors(self):
