@@ -1,6 +1,8 @@
 defaults: &defaults
   docker:
     - image: buildpack-deps:xenial
+      environment:
+        LANG: C.UTF-8
   working_directory: ~/
 
 test-defaults: &test-defaults
