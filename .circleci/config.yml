@@ -28,7 +28,7 @@ jobs:
           path: emscripten/
       - run: |
           apt-get update
-          apt-get install -y python cmake
+          apt-get install -y python3 cmake
           wget https://github.com/juj/emsdk/archive/master.tar.gz
           tar -xf master.tar.gz
           pushd emsdk-master
