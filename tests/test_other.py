@@ -10,7 +10,7 @@ import tools.line_endings
 
 # Runs an emcc task (used from another process in test test_emcc_multiprocess_cache_access, needs to be at top level for it to be pickleable).
 def multiprocess_task(c_file, cache_dir_name):
-  output = subprocess.check_output([PYTHON, EMCC, c_file, '--cache', cache_dir_name], stderr=subprocess.STDOUT, universal_newlines=True)
+  output = run_process([PYTHON, EMCC, c_file, '--cache', cache_dir_name], stderr=subprocess.STDOUT, stdout=PIPE).stdout
   if len(output.strip()) > 0:
     print('------')
     print(output)
@@ -7916,7 +7916,7 @@ addlib file2.a
 save
 end
 ''')
-    result = subprocess.check_output([PYTHON, EMAR, 't', 'combined.a'], universal_newlines=True)
+    result = run_process([PYTHON, EMAR, 't', 'combined.a'], stdout=PIPE).stdout
     assert 'file1' in result
     assert 'file2' in result
 
