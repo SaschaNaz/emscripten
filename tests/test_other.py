@@ -7881,7 +7881,7 @@ int main() {
 
                     print(' '.join(cmd))
                     self.clear()
-                    proc = Popen(cmd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+                    proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
                     output, err = proc.communicate()
                     print(os.listdir('.'))
                     assert expect_success == (proc.returncode == 0)
@@ -7898,7 +7898,7 @@ int main() {
     open('file2', 'w').write(' ')
     subprocess.call([PYTHON, EMAR, 'cr', 'file1.a', 'file1'])
     subprocess.call([PYTHON, EMAR, 'cr', 'file2.a', 'file2'])
-    emar = subprocess.Popen([PYTHON, EMAR, '-M'], stdin=PIPE, universal_newlines=True)
+    emar = subprocess.Popen([PYTHON, EMAR, '-M'], stdin=PIPE)
     emar.communicate('''create combined.a
 addlib file1.a
 addlib file2.a
