@@ -93,17 +93,16 @@ There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR P
       # properly report source code errors, and stop there
       self.clear()
       assert not os.path.exists('a.out.js')
-      process = Popen([PYTHON, compiler, path_from_root('tests', 'hello_world_error' + suffix)], stdout=PIPE, stderr=PIPE, universal_newlines=True)
-      output = process.communicate()
+      output = run_process([PYTHON, compiler, path_from_root('tests', 'hello_world_error' + suffix)], stdout=PIPE, stderr=PIPE)
       assert not os.path.exists('a.out.js'), 'compilation failed, so no output file is expected'
-      assert len(output[0]) == 0, output[0]
+      assert len(output.stdout) == 0, output.stdout
       assert process.returncode is not 0, 'Failed compilation must return a nonzero error code!'
-      self.assertNotContained('IOError', output[1]) # no python stack
-      self.assertNotContained('Traceback', output[1]) # no python stack
-      self.assertContained('error: invalid preprocessing directive', output[1])
-      self.assertContained(["error: use of undeclared identifier 'cheez", "error: unknown type name 'cheez'"], output[1])
-      self.assertContained('errors generated', output[1])
-      assert 'compiler frontend failed to generate LLVM bitcode, halting' in output[1].split('errors generated.')[1]
+      self.assertNotContained('IOError', output.stderr) # no python stack
+      self.assertNotContained('Traceback', output.stderr) # no python stack
+      self.assertContained('error: invalid preprocessing directive', output.stderr)
+      self.assertContained(["error: use of undeclared identifier 'cheez", "error: unknown type name 'cheez'"], output.stderr)
+      self.assertContained('errors generated', output.stderr)
+      assert 'compiler frontend failed to generate LLVM bitcode, halting' in output.stderr.split('errors generated.')[1]
 
       # emcc src.cpp -c    and   emcc src.cpp -o src.[o|bc] ==> should give a .bc file
       #      regression check: -o js should create "js", with bitcode content
@@ -494,12 +493,12 @@ f.close()
           if test_dir == 'target_html':
             env['EMCC_SKIP_SANITY_CHECK'] = '1'
           print(str(cmd))
-          ret = Popen(cmd, env=env, stdout=None if EM_BUILD_VERBOSE_LEVEL >= 2 else PIPE, stderr=None if EM_BUILD_VERBOSE_LEVEL >= 1 else PIPE, universal_newlines=True).communicate()
-          if len(ret) > 1 and ret[1] != None and len(ret[1].strip()) > 0:
+          ret = Popen(cmd, env=env, stdout=None if EM_BUILD_VERBOSE_LEVEL >= 2 else PIPE, stderr=None if EM_BUILD_VERBOSE_LEVEL >= 1 else PIPE).communicate()
+          if ret.stderr != None and len(ret.stderr.strip()) > 0:
             logging.error(ret[1]) # If there were any errors, print them directly to console for diagnostics.
-          if len(ret) > 1 and ret[1] != None and 'error' in ret[1].lower():
+          if ret.stderr != None and 'error' in ret.stderr.lower():
             logging.error('Failed command: ' + ' '.join(cmd))
-            logging.error('Result:\n' + ret[1])
+            logging.error('Result:\n' + ret.stderr)
             raise Exception('cmake call failed!')
 
           if prebuild:
@@ -509,12 +508,12 @@ f.close()
           cmd = make
           if EM_BUILD_VERBOSE_LEVEL >= 3 and 'Ninja' not in generator:
             cmd += ['VERBOSE=1']
-          ret = Popen(cmd, stdout=None if EM_BUILD_VERBOSE_LEVEL >= 2 else PIPE, universal_newlines=True).communicate()
-          if len(ret) > 1 and ret[1] != None and len(ret[1].strip()) > 0:
-            logging.error(ret[1]) # If there were any errors, print them directly to console for diagnostics.
-          if len(ret) > 0 and ret[0] != None and 'error' in ret[0].lower() and not '0 error(s)' in ret[0].lower():
+          ret = run_processs(cmd, stdout=None if EM_BUILD_VERBOSE_LEVEL >= 2 else PIPE)
+          if ret.stderr != None and len(ret.stderr.strip()) > 0:
+            logging.error(ret.stderr) # If there were any errors, print them directly to console for diagnostics.
+          if ret.stdout != None and 'error' in ret.stdout.lower() and not '0 error(s)' in ret.stdout.lower():
             logging.error('Failed command: ' + ' '.join(cmd))
-            logging.error('Result:\n' + ret[0])
+            logging.error('Result:\n' + ret.stdout)
             raise Exception('make failed!')
           assert os.path.exists(tempdirname + '/' + output_file), 'Building a cmake-generated Makefile failed to produce an output file %s!' % tempdirname + '/' + output_file
 
@@ -1255,12 +1254,10 @@ int f() {
                            (['-Lsubdir/something', '-Wwarn-absolute-paths'], False),
                            ([], False)]:
       print(args, expected)
-      proc = Popen([PYTHON, EMCC, 'main.c'] + args, stderr=PIPE, universal_newlines=True)
-      err = proc.communicate()[1]
-      assert proc.returncode is 0
-      assert ('encountered. If this is to a local system header/library, it may cause problems (local system files make sense for compiling natively on your system, but not necessarily to JavaScript)' in err) == expected, err
+      proc = Popen([PYTHON, EMCC, 'main.c'] + args, stderr=PIPE)
+      assert ('encountered. If this is to a local system header/library, it may cause problems (local system files make sense for compiling natively on your system, but not necessarily to JavaScript)' in proc.stderr) == expected, proc.stderr
       if not expected:
-        assert err == '', err
+        assert proc.stderr == '', proc.stderr
 
   def test_local_link(self):
     # Linking a local library directly, like /usr/lib/libsomething.so, cannot work of course since it
@@ -2057,9 +2054,9 @@ int f() {
   def test_m_mm(self):
     open(os.path.join(self.get_dir(), 'foo.c'), 'w').write('''#include <emscripten.h>''')
     for opt in ['M', 'MM']:
-      output, err = Popen([PYTHON, EMCC, os.path.join(self.get_dir(), 'foo.c'), '-' + opt], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()
-      assert 'foo.o: ' in output, '-%s failed to produce the right output: %s' % (opt, output)
-      assert 'error' not in err, 'Unexpected stderr: ' + err
+      proc = run_process([PYTHON, EMCC, os.path.join(self.get_dir(), 'foo.c'), '-' + opt], stdout=PIPE, stderr=PIPE)
+      assert 'foo.o: ' in proc.stdout, '-%s failed to produce the right output: %s' % (opt, proc.stdout)
+      assert 'error' not in proc.stderr, 'Unexpected stderr: ' + proc.stderr
 
   def test_emcc_debug_files(self):
     if os.environ.get('EMCC_DEBUG'): return self.skip('cannot run in debug mode')
@@ -2102,7 +2099,7 @@ int f() {
         ]:
         print(args, expect_llvm, expect_js)
         with clean_write_access_to_canonical_temp_dir():
-          output, err = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.cpp')] + args, stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()
+          err = run_process([PYTHON, EMCC, path_from_root('tests', 'hello_world.cpp')] + args, stdout=PIPE, stderr=PIPE).stderr
         assert expect_llvm == ('strip-debug' not in err)
         assert expect_js == ('registerize' not in err)
     finally:
@@ -2178,9 +2175,7 @@ int f() {
     open(os.path.join(self.get_dir(), 'test.file'), 'w').write('''ay file..............,,,,,,,,,,,,,,''')
     open(os.path.join(self.get_dir(), 'stdin'), 'w').write('''inter-active''')
     subprocess.check_call([PYTHON, EMCC, os.path.join(self.get_dir(), 'files.cpp'), '-c'])
-    nativize_llvm = Popen([PYTHON, path_from_root('tools', 'nativize_llvm.py'), os.path.join(self.get_dir(), 'files.o')], stdout=PIPE, universal_newlines=True)
-    out = nativize_llvm.communicate(input)
-    assert nativize_llvm.returncode == 0, out
+    run_process([PYTHON, path_from_root('tools', 'nativize_llvm.py'), os.path.join(self.get_dir(), 'files.o')], stdout=PIPE)
     output = run_process([os.path.join(self.get_dir(), 'files.o.run')], stdin=open(os.path.join(self.get_dir(), 'stdin')), stdout=PIPE, stderr=PIPE)
     self.assertContained('''size: 37
 data: 119,97,107,97,32,119,97,107,97,35,35,35,35,35,35,35,35,35,35,35,35,35,35,35,35,35,35,35,35,35,35,35,35,35,35,35,35
@@ -2316,13 +2311,11 @@ seeked= file.
         return
     full = os.path.join(unicode_name, 'data.txt')
     open(full, 'w').write('data')
-    proc = Popen([PYTHON, FILE_PACKAGER, 'test.data', '--preload', full], stdout=PIPE, stderr=PIPE, universal_newlines=True)
-    out, err = proc.communicate()
-    assert proc.returncode == 0, err
-    assert len(out) > 0, err
-    assert len(err) == 0, err
-    assert unicode_name in out, out
-    print(len(err))
+    proc = run_process([PYTHON, FILE_PACKAGER, 'test.data', '--preload', full], stdout=PIPE, stderr=PIPE)
+    assert len(proc.stdout) > 0, proc.stderr
+    assert len(proc.stderr) == 0, proc.stderr
+    assert unicode_name in proc.stdout, proc.stdout
+    print(len(proc.stderr))
 
   def test_crunch(self):
     try:
@@ -3076,12 +3069,12 @@ int main() {
       assert '|5|' in output, output
 
       # also verify that the gch is actually used
-      err = Popen([PYTHON, EMCC, 'src.cpp', '-include', 'header.h', '-Xclang', '-print-stats'], stderr=PIPE, universal_newlines=True).communicate()
-      self.assertTextDataContained('*** PCH/Modules Loaded:\nModule: header.h.' + suffix, err[1])
+      err = run_process([PYTHON, EMCC, 'src.cpp', '-include', 'header.h', '-Xclang', '-print-stats'], stderr=PIPE).stderr
+      self.assertTextDataContained('*** PCH/Modules Loaded:\nModule: header.h.' + suffix, err)
       # and sanity check it is not mentioned when not
       try_delete('header.h.' + suffix)
-      err = Popen([PYTHON, EMCC, 'src.cpp', '-include', 'header.h', '-Xclang', '-print-stats'], stderr=PIPE, universal_newlines=True).communicate()
-      assert '*** PCH/Modules Loaded:\nModule: header.h.' + suffix not in err[1].replace('\r\n', '\n'), err[1]
+      err = Popen([PYTHON, EMCC, 'src.cpp', '-include', 'header.h', '-Xclang', '-print-stats'], stderr=PIPE).stderr
+      assert '*** PCH/Modules Loaded:\nModule: header.h.' + suffix not in err[1].replace('\r\n', '\n'), err
 
       # with specified target via -o
       try_delete('header.h.' + suffix)
@@ -3254,7 +3247,7 @@ int main(int argc, char **argv) {
         ]:
         print(args, expect)
         with clean_write_access_to_canonical_temp_dir():
-          output, err = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.cpp')] + args, stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()
+          err = run_process([PYTHON, EMCC, path_from_root('tests', 'hello_world.cpp')] + args, stdout=PIPE, stderr=PIPE).stderr
         self.assertContained(expect, err)
         if '-O3' in args or '-Oz' in args or '-Os' in args:
           self.assertContained('registerizeHarder', err)
@@ -6148,9 +6141,7 @@ int main() {
                            # last warning flag should "win"
                            (['-O1', '-s', 'ALLOW_MEMORY_GROWTH=1', '-Wno-almost-asm', '-Walmost-asm'], True)]:
       print(args, expected)
-      proc = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.c')] + args, stderr=PIPE, universal_newlines=True)
-      err = proc.communicate()[1]
-      assert proc.returncode is 0
+      err = run_process([PYTHON, EMCC, path_from_root('tests', 'hello_world.c')] + args, stderr=PIPE)
       assert (warning in err) == expected, err
       if not expected:
         assert err == '', err
@@ -6164,9 +6155,7 @@ int main() {
 
   def test_emcc_dev_null(self):
     if WINDOWS: return self.skip('posix-only')
-    proc = Popen([PYTHON, EMCC, '-dM', '-E', '-x', 'c', '/dev/null'], stdout=PIPE, universal_newlines=True)
-    out, err = proc.communicate()
-    assert proc.returncode == 0
+    out = run_process([PYTHON, EMCC, '-dM', '-E', '-x', 'c', '/dev/null'], stdout=PIPE).stdout
     self.assertContained('#define __EMSCRIPTEN__ 1', out) # all our defines should show up
 
   def test_umask_0(self):
@@ -6220,15 +6209,11 @@ mergeInto(LibraryManager.library, {
   }()),
 });
 ''')
-    proc = Popen([PYTHON, EMCC, 'test.cpp', '-s', 'ERROR_ON_UNDEFINED_SYMBOLS=1', '--js-library', 'library_foo.js'], stderr=PIPE, universal_newlines=True)
-    out, err = proc.communicate()
-    assert proc.returncode != 0
+    err = run_process([PYTHON, EMCC, 'test.cpp', '-s', 'ERROR_ON_UNDEFINED_SYMBOLS=1', '--js-library', 'library_foo.js'], stderr=PIPE).stderr
     assert 'unresolved symbol' in err
 
     # and also for missing C code, of course (without the --js-library, it's just a missing C method)
-    proc = Popen([PYTHON, EMCC, 'test.cpp', '-s', 'ERROR_ON_UNDEFINED_SYMBOLS=1'], stderr=PIPE, universal_newlines=True)
-    out, err = proc.communicate()
-    assert proc.returncode != 0
+    err = run_process([PYTHON, EMCC, 'test.cpp', '-s', 'ERROR_ON_UNDEFINED_SYMBOLS=1'], stderr=PIPE).stderr
     assert 'unresolved symbol' in err
 
   def test_realpath(self):
@@ -7133,10 +7118,10 @@ int main() {
     if use_hash_info:
       command.append('--use-hash-info')
 
-    output, err = Popen(NODE_JS + command, stdin=PIPE, stderr=PIPE, stdout=PIPE, universal_newlines=True).communicate()
-    assert err == '', err
+    proc = run_process(NODE_JS + command, stdin=PIPE, stderr=PIPE, stdout=PIPE)
+    assert proc.stderr == '', proc.stderr
     expected_output = self.get_file_contents(expected_output_file)
-    output = self.normalize_line_endings(output)
+    output = self.normalize_line_endings(proc.stdout)
 
     self.assertIdentical(expected_output, output)
 
@@ -7338,9 +7323,7 @@ int main() {
             try_delete('a.out.wast')
             cmd = [PYTHON, EMCC, path_from_root('tests', 'core', 'test_i64.c'), '-s', option + '=1', '-s', 'BINARYEN_METHOD="interpret-s-expr"'] + args
             print(args, 'js opts:', expect_js_opts, 'only-wasm:', expect_only_wasm, '   ', ' '.join(cmd))
-            proc = Popen(cmd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
-            output, err = proc.communicate()
-            assert proc.returncode == 0
+            err = run_process(cmd, stdout=PIPE, stderr=PIPE).stderr
             assert expect_js_opts == ('applying js optimization passes:' in err), err
             assert expect_only_wasm == ('-emscripten-only-wasm' in err and '--wasm-only' in err), err # check both flag to fastcomp and to asm2wasm
             wast = open('a.out.wast').read()
@@ -7381,7 +7364,7 @@ int main() {
         print(args, expect)
         try_delete('a.out.js')
         with clean_write_access_to_canonical_temp_dir():
-          output, err = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.cpp'), '-s', 'BINARYEN=1', '-s', 'BINARYEN_METHOD="interpret-binary"'] + args, stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()
+          err = run_process([PYTHON, EMCC, path_from_root('tests', 'hello_world.cpp'), '-s', 'BINARYEN=1', '-s', 'BINARYEN_METHOD="interpret-binary"'] + args, stdout=PIPE, stderr=PIPE).stderr
         assert expect == (' -emscripten-precise-f32' in err), err
         self.assertContained('hello, world!', run_js('a.out.js'))
     finally:
@@ -7430,8 +7413,7 @@ int main() {
       if method is not None:
         cmd += ['-s', 'BINARYEN_METHOD="' + method + '"']
       print(' '.join(cmd))
-      proc = Popen(cmd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
-      out, err = proc.communicate()
+      err = run_process(cmd, stdout=PIPE, stderr=PIPE).stderr
       print(err)
       warning = 'BINARYEN_ASYNC_COMPILATION disabled due to user options. This will reduce performance and compatibility'
       if method and ',' in method:
@@ -7559,9 +7541,7 @@ int main() {
           try_delete('a.out.wast')
           cmd = [PYTHON, EMCC, path_from_root('tests', 'hello_world.cpp'), '-s', 'WASM=1'] + args
           print(' '.join(cmd))
-          proc = Popen(cmd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
-          output, err = proc.communicate()
-          assert proc.returncode == 0
+          err = run_process(cmd, stdout=PIPE, stderr=PIPE).stderr
           asm2wasm_line = [x for x in err.split('\n') if 'asm2wasm' in x][0]
           asm2wasm_line = asm2wasm_line.strip() + ' ' # ensure it ends with a space, for simpler searches below
           print('|' + asm2wasm_line + '|')
@@ -7591,7 +7571,7 @@ int main() {
           print(args, expect)
           cmd = [PYTHON, EMCC, path_from_root('tests', 'hello_libcxx.cpp'), '-s', 'WASM=1', '-O3'] + args
           print(' '.join(cmd))
-          output, err = Popen(cmd, stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()
+          err = run_process(cmd, stdout=PIPE, stderr=PIPE).stderr
           asm2wasm_line = [x for x in err.split('\n') if 'asm2wasm' in x][0]
           asm2wasm_line = asm2wasm_line.strip() + ' ' # ensure it ends with a space, for simpler searches below
           print('|' + asm2wasm_line + '|')
