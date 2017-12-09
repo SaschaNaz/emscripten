@@ -2267,15 +2267,15 @@ seeked= file.
     os.chdir('subdir')
     open('data2.txt', 'w').write('data2')
     # relative path to below the current dir is invalid
-    output = run_process([PYTHON, FILE_PACKAGER, 'test.data', '--preload', '../data1.txt'], stdout=PIPE, stderr=PIPE)
+    output = run_process([PYTHON, FILE_PACKAGER, 'test.data', '--preload', '../data1.txt'], stdout=PIPE, stderr=PIPE, check=False)
     assert len(output.stdout) == 0
     assert 'below the current directory' in output.stderr
     # relative path that ends up under us is cool
-    output = run_process_compat([PYTHON, FILE_PACKAGER, 'test.data', '--preload', '../subdir/data2.txt'], stdout=PIPE, stderr=PIPE)
+    output = run_process([PYTHON, FILE_PACKAGER, 'test.data', '--preload', '../subdir/data2.txt'], stdout=PIPE, stderr=PIPE)
     assert len(output.stdout) > 0
     assert 'below the current directory' not in output.stderr
     # direct path leads to the same code being generated - relative path does not make us do anything different
-    output2 = Popen([PYTHON, FILE_PACKAGER, 'test.data', '--preload', 'data2.txt'], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()
+    output2 = run_process([PYTHON, FILE_PACKAGER, 'test.data', '--preload', 'data2.txt'], stdout=PIPE, stderr=PIPE)
     assert len(output2.stdout) > 0
     assert 'below the current directory' not in output2.stderr
     def clean(txt):
@@ -5420,7 +5420,7 @@ int main(void) {
         if os.environ.get('EMCC_DEBUG'): return self.skip('cannot run in debug mode')
         try:
           os.environ['EMCC_DEBUG'] = '1'
-          err = run_process_compat([PYTHON, EMCC, '-c', main_name, lib_name] + args, stderr=PIPE).stderr
+          err = run_process([PYTHON, EMCC, '-c', main_name, lib_name] + args, stderr=PIPE).stderr
         finally:
           del os.environ['EMCC_DEBUG']
 
@@ -5510,7 +5510,7 @@ Descriptor desc;
     def check(what, args, fail=True, expect=''):
       args = [PYTHON, path_from_root(what)] + args
       print(what, args, fail, expect)
-      err = run_process(args, stdout=PIPE, stderr=PIPE).stderr
+      err = run_process(args, stdout=PIPE, stderr=PIPE, check=not fail).stderr
       assert ('is a helper for' in err) == fail
       assert ('Typical usage' in err) == fail
       self.assertContained(expect, out)
@@ -5588,9 +5588,9 @@ int main() {
   def test_file_packager_huge(self):
     open('huge.dat', 'w').write('a'*(1024*1024*257))
     open('tiny.dat', 'w').write('a')
-    err = run_process_compat([PYTHON, FILE_PACKAGER, 'test.data', '--preload', 'tiny.dat'], stdout=PIPE, stderr=PIPE).stderr
+    err = run_process([PYTHON, FILE_PACKAGER, 'test.data', '--preload', 'tiny.dat'], stdout=PIPE, stderr=PIPE).stderr
     assert err == '', err
-    err = run_process_compat([PYTHON, FILE_PACKAGER, 'test.data', '--preload', 'huge.dat'], stdout=PIPE, stderr=PIPE).stderr
+    err = run_process([PYTHON, FILE_PACKAGER, 'test.data', '--preload', 'huge.dat'], stdout=PIPE, stderr=PIPE).stderr
     assert 'warning: file packager is creating an asset bundle of 257 MB. this is very large, and browsers might have trouble loading it' in err, err
     self.clear()
 
@@ -7792,7 +7792,7 @@ int main() {
   def test_binaryen_no_exit_runtime_warn_message(self):
     err = run_process([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-o', 'hello_world.js', '-s', 'WASM=1', '-Oz'], stdout=PIPE, stderr=PIPE).stderr
     assert 'you should enable  -s NO_EXIT_RUNTIME=1' in err
-    err = run_process_compat([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-o', 'hello_world.bc', '-s', 'WASM=1', '-Oz'], stdout=PIPE, stderr=PIPE).stderr
+    err = run_process([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-o', 'hello_world.bc', '-s', 'WASM=1', '-Oz'], stdout=PIPE, stderr=PIPE).stderr
     assert 'you should enable  -s NO_EXIT_RUNTIME=1' not in err
 
   def test_o_level_clamp(self):
