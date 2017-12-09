@@ -5510,7 +5510,7 @@ Descriptor desc;
     def check(what, args, fail=True, expect=''):
       args = [PYTHON, path_from_root(what)] + args
       print(what, args, fail, expect)
-      output = run_process(args, stdout=PIPE, stderr=PIPE, check=not fail)
+      output = run_process(args, stdout=PIPE, stderr=PIPE, check=False)
       assert ('is a helper for' in output.stderr) == fail
       assert ('Typical usage' in output.stderr) == fail
       self.assertContained(expect, output.stdout)
