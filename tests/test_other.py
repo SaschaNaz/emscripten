@@ -5510,10 +5510,10 @@ Descriptor desc;
     def check(what, args, fail=True, expect=''):
       args = [PYTHON, path_from_root(what)] + args
       print(what, args, fail, expect)
-      err = run_process(args, stdout=PIPE, stderr=PIPE, check=not fail).stderr
-      assert ('is a helper for' in err) == fail
-      assert ('Typical usage' in err) == fail
-      self.assertContained(expect, out)
+      output = run_process(args, stdout=PIPE, stderr=PIPE, check=not fail)
+      assert ('is a helper for' in output.stderr) == fail
+      assert ('Typical usage' in output.stderr) == fail
+      self.assertContained(expect, output.stdout)
     check('emmake', [])
     check('emconfigure', [])
     check('emmake', ['--version'])
