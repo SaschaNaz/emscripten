@@ -505,8 +505,8 @@ fi
 
     for compiler in [EMCC, EMXX]:
       print(compiler)
-      out, err = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.cpp'), '-v'], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()
-      out2, err2 = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.cpp'), '-v', '-nostdinc++'], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()
+      out = run_process([PYTHON, EMCC, path_from_root('tests', 'hello_world.cpp'), '-v'], stdout=PIPE, stderr=PIPE).stdout
+      out2 = run_process([PYTHON, EMCC, path_from_root('tests', 'hello_world.cpp'), '-v', '-nostdinc++'], stdout=PIPE, stderr=PIPE).stdout
       assert out == out2
       def focus(e):
         assert 'search starts here:' in e, e

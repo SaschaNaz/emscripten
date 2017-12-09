@@ -392,10 +392,10 @@ f.close()
     # We expand this in case the EM_CONFIG is ~/.emscripten (default)
     config = os.path.expanduser(EM_CONFIG)
     # We pass -version twice to work around the newargs > 2 check in emar
-    (out, err) = Popen([PYTHON, EMAR, '--em-config', config, '-version', '-version'], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()
-    assert out
-    assert not err
-    self.assertContained('LLVM', out)
+    output = run_process([PYTHON, EMAR, '--em-config', config, '-version', '-version'], stdout=PIPE, stderr=PIPE)
+    assert output.stdout
+    assert not output.stderr
+    self.assertContained('LLVM', output.stdout)
 
   def test_cmake(self):
     # Test all supported generators.
@@ -2267,22 +2267,20 @@ seeked= file.
     os.chdir('subdir')
     open('data2.txt', 'w').write('data2')
     # relative path to below the current dir is invalid
-    out, err = Popen([PYTHON, FILE_PACKAGER, 'test.data', '--preload', '../data1.txt'], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()
-    assert len(out) == 0
-    assert 'below the current directory' in err
+    output = run_process([PYTHON, FILE_PACKAGER, 'test.data', '--preload', '../data1.txt'], stdout=PIPE, stderr=PIPE)
+    assert len(output.stdout) == 0
+    assert 'below the current directory' in output.stderr
     # relative path that ends up under us is cool
-    out, err = Popen([PYTHON, FILE_PACKAGER, 'test.data', '--preload', '../subdir/data2.txt'], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()
-    assert len(out) > 0
-    assert 'below the current directory' not in err
+    output = run_process_compat([PYTHON, FILE_PACKAGER, 'test.data', '--preload', '../subdir/data2.txt'], stdout=PIPE, stderr=PIPE)
+    assert len(output.stdout) > 0
+    assert 'below the current directory' not in output.stderr
     # direct path leads to the same code being generated - relative path does not make us do anything different
-    out2, err2 = Popen([PYTHON, FILE_PACKAGER, 'test.data', '--preload', 'data2.txt'], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()
-    assert len(out2) > 0
-    assert 'below the current directory' not in err2
+    output2 = Popen([PYTHON, FILE_PACKAGER, 'test.data', '--preload', 'data2.txt'], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()
+    assert len(output2.stdout) > 0
+    assert 'below the current directory' not in output2.stderr
     def clean(txt):
       return [line for line in txt.split('\n') if 'PACKAGE_UUID' not in line and 'loadPackage({' not in line]
-    out = clean(out)
-    out2 = clean(out2)
-    assert out == out2
+    assert clean(output.stdout) == clean(output2.stdout)
     # verify '--separate-metadata' option produces separate metadata file
     os.chdir('..')
     Popen([PYTHON, FILE_PACKAGER, 'test.data', '--preload', 'data1.txt', '--preload', 'subdir/data2.txt', '--js-output=immutable.js', '--separate-metadata']).communicate()
@@ -3423,7 +3421,7 @@ int main()
 
   def test_bad_triple(self):
     Popen([CLANG, path_from_root('tests', 'hello_world.c'), '-c', '-emit-llvm', '-o', 'a.bc'] + get_clang_native_args(), env=get_clang_native_env(), stdout=PIPE, stderr=PIPE).communicate()
-    out, err = Popen([PYTHON, EMCC, 'a.bc'], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()
+    err = run_process_compat([PYTHON, EMCC, 'a.bc'], stdout=PIPE, stderr=PIPE).stderr
     assert 'warning' in err or 'WARNING' in err, err
     assert 'incorrect target triple' in err or 'different target triples' in err, err
 
@@ -5368,7 +5366,7 @@ int main(void) {
         os.environ['EMCC_DEBUG'] = '1'
         os.environ['EMCC_NATIVE_OPTIMIZER'] = '1'
         with clean_write_access_to_canonical_temp_dir():
-          out, err = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-O2',] + args, stderr=PIPE, universal_newlines=True).communicate()
+          err = run_process([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-O2',] + args, stderr=PIPE).stderr
       finally:
         if old_debug: os.environ['EMCC_DEBUG'] = old_debug
         else: del os.environ['EMCC_DEBUG']
@@ -5429,7 +5427,7 @@ int main(void) {
         if os.environ.get('EMCC_DEBUG'): return self.skip('cannot run in debug mode')
         try:
           os.environ['EMCC_DEBUG'] = '1'
-          out, err = Popen([PYTHON, EMCC, '-c', main_name, lib_name] + args, stderr=PIPE, universal_newlines=True).communicate()
+          err = run_process_compat([PYTHON, EMCC, '-c', main_name, lib_name] + args, stderr=PIPE).stderr
         finally:
           del os.environ['EMCC_DEBUG']
 
@@ -5519,7 +5517,7 @@ Descriptor desc;
     def check(what, args, fail=True, expect=''):
       args = [PYTHON, path_from_root(what)] + args
       print(what, args, fail, expect)
-      out, err = Popen(args, stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()
+      err = run_process(args, stdout=PIPE, stderr=PIPE).stderr
       assert ('is a helper for' in err) == fail
       assert ('Typical usage' in err) == fail
       self.assertContained(expect, out)
@@ -5553,10 +5551,10 @@ print(os.environ.get('NM'))
       [['--cflags', '--libs'], '-s USE_SDL=2'],
     ]:
       print(args, expected)
-      out, err = Popen([PYTHON, path_from_root('system', 'bin', 'sdl2-config')] + args, stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()
+      out = run_process_compat([PYTHON, path_from_root('system', 'bin', 'sdl2-config')] + args, stdout=PIPE, stderr=PIPE).stdout
       assert expected in out, out
       print('via emmake')
-      out, err = Popen([PYTHON, path_from_root('emmake'), 'sdl2-config'] + args, stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()
+      out = run_process_compat([PYTHON, path_from_root('emmake'), 'sdl2-config'] + args, stdout=PIPE, stderr=PIPE).stdout
       assert expected in out, out
 
   def test_warn_toomany_vars(self):
@@ -5597,9 +5595,9 @@ int main() {
   def test_file_packager_huge(self):
     open('huge.dat', 'w').write('a'*(1024*1024*257))
     open('tiny.dat', 'w').write('a')
-    out, err = Popen([PYTHON, FILE_PACKAGER, 'test.data', '--preload', 'tiny.dat'], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()
+    err = run_process_compat([PYTHON, FILE_PACKAGER, 'test.data', '--preload', 'tiny.dat'], stdout=PIPE, stderr=PIPE).stderr
     assert err == '', err
-    out, err = Popen([PYTHON, FILE_PACKAGER, 'test.data', '--preload', 'huge.dat'], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()
+    err = run_process_compat([PYTHON, FILE_PACKAGER, 'test.data', '--preload', 'huge.dat'], stdout=PIPE, stderr=PIPE).stderr
     assert 'warning: file packager is creating an asset bundle of 257 MB. this is very large, and browsers might have trouble loading it' in err, err
     self.clear()
 
@@ -6144,7 +6142,7 @@ int main() {
 ''', out)
 
   def test_no_warn_exported_jslibfunc(self):
-    out, err = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-s', 'DEFAULT_LIBRARY_FUNCS_TO_INCLUDE=["alGetError"]', '-s', 'EXPORTED_FUNCTIONS=["_main", "_alGetError"]'], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()
+    Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-s', 'DEFAULT_LIBRARY_FUNCS_TO_INCLUDE=["alGetError"]', '-s', 'EXPORTED_FUNCTIONS=["_main", "_alGetError"]'], stdout=PIPE, stderr=PIPE).communicate()
     self.assertNotContained('''function requested to be exported, but not implemented: "_alGetError"''', err)
 
   def test_almost_asm_warning(self):
@@ -7795,19 +7793,19 @@ int main() {
   def test_native_link_error_message(self):
     Popen([CLANG, '-c', path_from_root('tests', 'hello_world.c'), '-o', 'hello_world.o'] + get_clang_native_args(), env=get_clang_native_env(), stdout=PIPE, stderr=PIPE).communicate()
     Popen([LLVM_AR, 'r', 'hello_world.a', 'hello_world.o'], env=get_clang_native_env(), stdout=PIPE, stderr=PIPE).communicate()
-    out, err = Popen([PYTHON, EMCC, 'hello_world.a', '-o', 'hello_world.js'], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()
+    out, err = Popen([PYTHON, EMCC, 'hello_world.a', '-o', 'hello_world.js'], stdout=PIPE, stderr=PIPE).communicate()
     assert 'exists but was not an LLVM bitcode file suitable for Emscripten. Perhaps accidentally mixing native built object files with Emscripten?' in err
 
   # Tests that the warning message about pairing WASM with EVAL_CTORS appropriately triggers the warning about NO_EXIT_RUNTIME.
   def test_binaryen_no_exit_runtime_warn_message(self):
-    out, err = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-o', 'hello_world.js', '-s', 'WASM=1', '-Oz'], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()
+    err = run_process([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-o', 'hello_world.js', '-s', 'WASM=1', '-Oz'], stdout=PIPE, stderr=PIPE).stderr
     assert 'you should enable  -s NO_EXIT_RUNTIME=1' in err
-    out, err = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-o', 'hello_world.bc', '-s', 'WASM=1', '-Oz'], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()
+    err = run_process_compat([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-o', 'hello_world.bc', '-s', 'WASM=1', '-Oz'], stdout=PIPE, stderr=PIPE).stderr
     assert 'you should enable  -s NO_EXIT_RUNTIME=1' not in err
 
   def test_o_level_clamp(self):
     for level in [3, 4, 20]:
-      out, err = Popen([PYTHON, EMCC, '-O' + str(level), path_from_root('tests', 'hello_world.c')], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()
+      err = run_process_compat([PYTHON, EMCC, '-O' + str(level), path_from_root('tests', 'hello_world.c')], stdout=PIPE, stderr=PIPE).stderr
       assert os.path.exists('a.out.js'), '-O' + str(level) + ' should produce output'
       if level > 3:
         self.assertContained("optimization level '-O" + str(level) + "' is not supported; using '-O3' instead", err)
