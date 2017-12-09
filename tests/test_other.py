@@ -93,7 +93,7 @@ There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR P
       # properly report source code errors, and stop there
       self.clear()
       assert not os.path.exists('a.out.js')
-      output = run_process([PYTHON, compiler, path_from_root('tests', 'hello_world_error' + suffix)], stdout=PIPE, stderr=PIPE)
+      output = run_process([PYTHON, compiler, path_from_root('tests', 'hello_world_error' + suffix)], stdout=PIPE, stderr=PIPE, check=False)
       assert not os.path.exists('a.out.js'), 'compilation failed, so no output file is expected'
       assert len(output.stdout) == 0, output.stdout
       assert process.returncode is not 0, 'Failed compilation must return a nonzero error code!'
@@ -493,9 +493,9 @@ f.close()
           if test_dir == 'target_html':
             env['EMCC_SKIP_SANITY_CHECK'] = '1'
           print(str(cmd))
-          ret = Popen(cmd, env=env, stdout=None if EM_BUILD_VERBOSE_LEVEL >= 2 else PIPE, stderr=None if EM_BUILD_VERBOSE_LEVEL >= 1 else PIPE).communicate()
+          ret = run_process(cmd, env=env, stdout=None if EM_BUILD_VERBOSE_LEVEL >= 2 else PIPE, stderr=None if EM_BUILD_VERBOSE_LEVEL >= 1 else PIPE)
           if ret.stderr != None and len(ret.stderr.strip()) > 0:
-            logging.error(ret[1]) # If there were any errors, print them directly to console for diagnostics.
+            logging.error(ret.stderr) # If there were any errors, print them directly to console for diagnostics.
           if ret.stderr != None and 'error' in ret.stderr.lower():
             logging.error('Failed command: ' + ' '.join(cmd))
             logging.error('Result:\n' + ret.stderr)
@@ -508,7 +508,7 @@ f.close()
           cmd = make
           if EM_BUILD_VERBOSE_LEVEL >= 3 and 'Ninja' not in generator:
             cmd += ['VERBOSE=1']
-          ret = run_processs(cmd, stdout=None if EM_BUILD_VERBOSE_LEVEL >= 2 else PIPE)
+          ret = run_process(cmd, stdout=None if EM_BUILD_VERBOSE_LEVEL >= 2 else PIPE)
           if ret.stderr != None and len(ret.stderr.strip()) > 0:
             logging.error(ret.stderr) # If there were any errors, print them directly to console for diagnostics.
           if ret.stdout != None and 'error' in ret.stdout.lower() and not '0 error(s)' in ret.stdout.lower():
@@ -1254,7 +1254,7 @@ int f() {
                            (['-Lsubdir/something', '-Wwarn-absolute-paths'], False),
                            ([], False)]:
       print(args, expected)
-      proc = Popen([PYTHON, EMCC, 'main.c'] + args, stderr=PIPE)
+      proc = run_process([PYTHON, EMCC, 'main.c'] + args, stderr=PIPE)
       assert ('encountered. If this is to a local system header/library, it may cause problems (local system files make sense for compiling natively on your system, but not necessarily to JavaScript)' in proc.stderr) == expected, proc.stderr
       if not expected:
         assert proc.stderr == '', proc.stderr
@@ -3073,8 +3073,8 @@ int main() {
       self.assertTextDataContained('*** PCH/Modules Loaded:\nModule: header.h.' + suffix, err)
       # and sanity check it is not mentioned when not
       try_delete('header.h.' + suffix)
-      err = Popen([PYTHON, EMCC, 'src.cpp', '-include', 'header.h', '-Xclang', '-print-stats'], stderr=PIPE).stderr
-      assert '*** PCH/Modules Loaded:\nModule: header.h.' + suffix not in err[1].replace('\r\n', '\n'), err
+      err = run_process([PYTHON, EMCC, 'src.cpp', '-include', 'header.h', '-Xclang', '-print-stats'], stderr=PIPE).stderr
+      assert '*** PCH/Modules Loaded:\nModule: header.h.' + suffix not in err.replace('\r\n', '\n'), err
 
       # with specified target via -o
       try_delete('header.h.' + suffix)
@@ -3371,7 +3371,7 @@ int main()
     ]:
       print(opts, expected)
       try_delete('a.out.js')
-      stderr = run_process([PYTHON, EMCC, 'src.c'] + opts, stderr=PIPE).stderr
+      stderr = run_process([PYTHON, EMCC, 'src.c'] + opts, stderr=PIPE, check=False).stderr
       for ce in compile_expected + ['''warning: incompatible pointer types''']:
         self.assertContained(ce, stderr)
       if expected is None:
@@ -6141,7 +6141,7 @@ int main() {
                            # last warning flag should "win"
                            (['-O1', '-s', 'ALLOW_MEMORY_GROWTH=1', '-Wno-almost-asm', '-Walmost-asm'], True)]:
       print(args, expected)
-      err = run_process([PYTHON, EMCC, path_from_root('tests', 'hello_world.c')] + args, stderr=PIPE)
+      err = run_process([PYTHON, EMCC, path_from_root('tests', 'hello_world.c')] + args, stderr=PIPE).stderr
       assert (warning in err) == expected, err
       if not expected:
         assert err == '', err
@@ -6209,11 +6209,11 @@ mergeInto(LibraryManager.library, {
   }()),
 });
 ''')
-    err = run_process([PYTHON, EMCC, 'test.cpp', '-s', 'ERROR_ON_UNDEFINED_SYMBOLS=1', '--js-library', 'library_foo.js'], stderr=PIPE).stderr
+    err = run_process([PYTHON, EMCC, 'test.cpp', '-s', 'ERROR_ON_UNDEFINED_SYMBOLS=1', '--js-library', 'library_foo.js'], stderr=PIPE, check=False).stderr
     assert 'unresolved symbol' in err
 
     # and also for missing C code, of course (without the --js-library, it's just a missing C method)
-    err = run_process([PYTHON, EMCC, 'test.cpp', '-s', 'ERROR_ON_UNDEFINED_SYMBOLS=1'], stderr=PIPE).stderr
+    err = run_process([PYTHON, EMCC, 'test.cpp', '-s', 'ERROR_ON_UNDEFINED_SYMBOLS=1'], stderr=PIPE, check=False).stderr
     assert 'unresolved symbol' in err
 
   def test_realpath(self):
@@ -7248,7 +7248,7 @@ int main() {
     self.assertNotContained("Unknown file suffix when compiling to LLVM bitcode", stderr)
     self.assertContained("Test_source_fixed_lang_hello", run_js('a.out.js'))
 
-    stderr = run_process([PYTHON, EMCC, '-Wall', '-std=c++14', 'src_tmp_fixed_lang'], stderr=PIPE).stderr
+    stderr = run_process([PYTHON, EMCC, '-Wall', '-std=c++14', 'src_tmp_fixed_lang'], stderr=PIPE, check=False).stderr
     self.assertContained("Input file has an unknown suffix, don't know what to do with it!", stderr)
 
   def test_disable_inlining(self):
