@@ -3378,7 +3378,7 @@ int main()
     ]:
       print(opts, expected)
       try_delete('a.out.js')
-      stdout, stderr = Popen([PYTHON, EMCC, 'src.c'] + opts, stderr=PIPE, universal_newlines=True).communicate()
+      stderr = run_process([PYTHON, EMCC, 'src.c'] + opts, stderr=PIPE).stderr
       for ce in compile_expected + ['''warning: incompatible pointer types''']:
         self.assertContained(ce, stderr)
       if expected is None:
@@ -3395,7 +3395,7 @@ int main()
         if opts != 1-asserts: extra = ['-s', 'ASSERTIONS=' + str(asserts)]
         cmd = [PYTHON, EMCC, path_from_root('tests', 'sillyfuncast2_noasm.ll'), '-O' + str(opts)] + extra
         print(cmd)
-        stdout, stderr = Popen(cmd, stderr=PIPE, universal_newlines=True).communicate()
+        stderr = run_process(cmd, stderr=PIPE).stderr
         assert ('''unexpected number of arguments 3 in call to 'doit', should be 2''' in stderr) == asserts, stderr
         assert ('''unexpected return type i32 in call to 'doit', should be void''' in stderr) == asserts, stderr
         assert ('''unexpected argument type float at index 1 in call to 'doit', should be i32''' in stderr) == asserts, stderr
@@ -3558,7 +3558,7 @@ int main()
         if m: cmd += ['--emit-symbol-map']
         if wasm: cmd += ['-s', 'WASM=1']
         print(cmd)
-        stdout, stderr = Popen(cmd, stderr=PIPE, universal_newlines=True).communicate()
+        stderr = run_process(cmd, stderr=PIPE).stderr
         assert (os.path.exists('a.out.js.symbols') == m), stderr
         if m:
           symbols = open('a.out.js.symbols').read()
@@ -3672,7 +3672,7 @@ int main(int argc, char **argv) {
       self.clear()
       cmd = [PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-s', 'EXPORTED_FUNCTIONS=["' + m + '_main"]']
       print(cmd)
-      stdout, stderr = Popen(cmd, stderr=PIPE, universal_newlines=True).communicate()
+      stderr = run_process(cmd, stderr=PIPE).stderr
       if m:
         assert 'function requested to be exported, but not implemented: " _main"' in stderr, stderr
       else:
@@ -3680,7 +3680,7 @@ int main(int argc, char **argv) {
 
   def test_no_dynamic_execution(self):
     cmd = [PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-O1', '-s', 'NO_DYNAMIC_EXECUTION=1']
-    stdout, stderr = Popen(cmd, stderr=PIPE, universal_newlines=True).communicate()
+    stderr = run_process(cmd, stderr=PIPE).stderr
     self.assertContained('hello, world!', run_js('a.out.js'))
     src = open('a.out.js').read()
     assert 'eval(' not in src
@@ -3690,7 +3690,7 @@ int main(int argc, char **argv) {
 
     # Test that --preload-file doesn't add an use of eval().
     cmd = [PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-O1', '-s', 'NO_DYNAMIC_EXECUTION=1', '--preload-file', 'temp.txt']
-    stdout, stderr = Popen(cmd, stderr=PIPE, universal_newlines=True).communicate()
+    stderr = run_process(cmd, stderr=PIPE).stderr
     self.assertContained('hello, world!', run_js('a.out.js'))
     src = open('a.out.js').read()
     assert 'eval(' not in src
@@ -6355,7 +6355,7 @@ Resolved: "/" => "/"
         if to_file:
           cmd += ['-s', 'EMTERPRETIFY_FILE="code.dat"']
         print(cmd)
-        stdout, stderr = Popen(cmd, stderr=PIPE, universal_newlines=True).communicate()
+        stderr = run_process(cmd, stderr=PIPE).stderr
         need_warning = linkable and not to_file
         assert ('''warning: emterpreter bytecode is fairly large''' in stderr) == need_warning, stderr
         assert ('''It is recommended to use  -s EMTERPRETIFY_FILE=..''' in stderr) == need_warning, stderr
@@ -6794,26 +6794,26 @@ int main() {
 
   def test_separate_asm_warning(self):
     # Test that -s PRECISE_F32=2 raises a warning that --separate-asm is implied.
-    stdout, stderr = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-s', 'PRECISE_F32=2', '-o', 'a.html'], stderr=PIPE, universal_newlines=True).communicate()
+    stderr = run_process([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-s', 'PRECISE_F32=2', '-o', 'a.html'], stderr=PIPE).stderr
     self.assertContained('forcing separate asm output', stderr)
 
     # Test that -s PRECISE_F32=2 --separate-asm should not post a warning.
-    stdout, stderr = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-s', 'PRECISE_F32=2', '-o', 'a.html', '--separate-asm'], stderr=PIPE, universal_newlines=True).communicate()
+    stderr = run_process([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-s', 'PRECISE_F32=2', '-o', 'a.html', '--separate-asm'], stderr=PIPE).stderr
     self.assertNotContained('forcing separate asm output', stderr)
 
     # Test that -s PRECISE_F32=1 should not post a warning.
-    stdout, stderr = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-s', 'PRECISE_F32=1', '-o', 'a.html'], stderr=PIPE, universal_newlines=True).communicate()
+    stderr = run_process([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-s', 'PRECISE_F32=1', '-o', 'a.html'], stderr=PIPE).stderr
     self.assertNotContained('forcing separate asm output', stderr)
 
     # Manually doing separate asm should show a warning, if not targeting html
     warning = '--separate-asm works best when compiling to HTML'
-    stdout, stderr = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '--separate-asm'], stderr=PIPE, universal_newlines=True).communicate()
+    stderr = run_process([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '--separate-asm'], stderr=PIPE).stderr
     self.assertContained(warning, stderr)
-    stdout, stderr = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '--separate-asm', '-o', 'a.html'], stderr=PIPE, universal_newlines=True).communicate()
+    stderr = run_process([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '--separate-asm', '-o', 'a.html'], stderr=PIPE).stderr
     self.assertNotContained(warning, stderr)
 
     # test that the warning can be suppressed
-    stdout, stderr = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '--separate-asm', '-Wno-separate-asm'], stderr=PIPE, universal_newlines=True).communicate()
+    stderr = run_process([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '--separate-asm', '-Wno-separate-asm'], stderr=PIPE).stderr
     self.assertNotContained(warning, stderr)
 
   def test_canonicalize_nan_warning(self):
@@ -6832,10 +6832,10 @@ int main() {
 }
 ''')
 
-    stdout, stderr = Popen([PYTHON, EMCC, 'src.cpp', '-O1'], stderr=PIPE, universal_newlines=True).communicate()
+    stderr = run_process([PYTHON, EMCC, 'src.cpp', '-O1'], stderr=PIPE).stderr
     self.assertContained("emcc: warning: cannot represent a NaN literal", stderr)
 
-    stdout, stderr = Popen([PYTHON, EMCC, 'src.cpp', '-O1', '-g'], stderr=PIPE, universal_newlines=True).communicate()
+    stderr = run_process([PYTHON, EMCC, 'src.cpp', '-O1', '-g'], stderr=PIPE).stderr
     self.assertContained("emcc: warning: cannot represent a NaN literal", stderr)
     self.assertContained('//@line 12 "src.cpp"', stderr)
 
@@ -7258,12 +7258,12 @@ int main() {
   return 0;
 }
     ''')
-    stdout, stderr = Popen([PYTHON, EMCC, '-Wall', '-std=c++14', '-x', 'c++', 'src_tmp_fixed_lang'], stderr=PIPE, universal_newlines=True).communicate()
+    stderr = run_process([PYTHON, EMCC, '-Wall', '-std=c++14', '-x', 'c++', 'src_tmp_fixed_lang'], stderr=PIPE).stderr
     self.assertNotContained("Input file has an unknown suffix, don't know what to do with it!", stderr)
     self.assertNotContained("Unknown file suffix when compiling to LLVM bitcode", stderr)
     self.assertContained("Test_source_fixed_lang_hello", run_js('a.out.js'))
 
-    stdout, stderr = Popen([PYTHON, EMCC, '-Wall', '-std=c++14', 'src_tmp_fixed_lang'], stderr=PIPE, universal_newlines=True).communicate()
+    stderr = run_process([PYTHON, EMCC, '-Wall', '-std=c++14', 'src_tmp_fixed_lang'], stderr=PIPE).stderr
     self.assertContained("Input file has an unknown suffix, don't know what to do with it!", stderr)
 
   def test_disable_inlining(self):
