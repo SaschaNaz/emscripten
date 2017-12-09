@@ -46,11 +46,9 @@ class WebsockifyServerHarness(object):
     # NOTE empty filename support is a hack to support
     # the current test_enet
     if self.filename:
-      sp = Popen([CLANG_CC, path_from_root('tests', self.filename), '-o', 'server', '-DSOCKK=%d' % self.target_port] + get_clang_native_args() + self.args, env=get_clang_native_env(), stdout=PIPE, stderr=PIPE, universal_newlines=True)
-      out = sp.communicate()
-      print('Socket server build: out:', out[0] or '', '/ err:', out[1] or '')
-      assert sp.returncode == 0
-      process = Popen([os.path.abspath('server')], universal_newlines=True)
+      sp = run_process([CLANG_CC, path_from_root('tests', self.filename), '-o', 'server', '-DSOCKK=%d' % self.target_port] + get_clang_native_args() + self.args, env=get_clang_native_env(), stdout=PIPE, stderr=PIPE)
+      print('Socket server build: out:', sp.stdout or '', '/ err:', sp.stderr or '')
+      process = Popen([os.path.abspath('server')])
       self.processes.append(process)
 
     # start the websocket proxy

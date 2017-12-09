@@ -1805,7 +1805,7 @@ int main() {
   @no_emterpreter
   def test_biggerswitch(self):
     num_cases = 20000
-    switch_case, err = Popen([PYTHON, path_from_root('tests', 'gen_large_switchcase.py'), str(num_cases)], stdout=PIPE, stderr=PIPE, universal_newlines=True).communicate()
+    switch_case = run_process([PYTHON, path_from_root('tests', 'gen_large_switchcase.py'), str(num_cases)], stdout=PIPE, stderr=PIPE).stdout
     self.do_run(switch_case, '''58996: 589965899658996
 59297: 592975929759297
 59598: default
