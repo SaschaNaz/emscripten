@@ -5544,10 +5544,10 @@ print(os.environ.get('NM'))
       [['--cflags', '--libs'], '-s USE_SDL=2'],
     ]:
       print(args, expected)
-      out = run_process_compat([PYTHON, path_from_root('system', 'bin', 'sdl2-config')] + args, stdout=PIPE, stderr=PIPE).stdout
+      out = run_process([PYTHON, path_from_root('system', 'bin', 'sdl2-config')] + args, stdout=PIPE, stderr=PIPE).stdout
       assert expected in out, out
       print('via emmake')
-      out = run_process_compat([PYTHON, path_from_root('emmake'), 'sdl2-config'] + args, stdout=PIPE, stderr=PIPE).stdout
+      out = run_process([PYTHON, path_from_root('emmake'), 'sdl2-config'] + args, stdout=PIPE, stderr=PIPE).stdout
       assert expected in out, out
 
   def test_warn_toomany_vars(self):
@@ -6135,7 +6135,7 @@ int main() {
 ''', out)
 
   def test_no_warn_exported_jslibfunc(self):
-    Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-s', 'DEFAULT_LIBRARY_FUNCS_TO_INCLUDE=["alGetError"]', '-s', 'EXPORTED_FUNCTIONS=["_main", "_alGetError"]'], stdout=PIPE, stderr=PIPE).communicate()
+    err = run_process([PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-s', 'DEFAULT_LIBRARY_FUNCS_TO_INCLUDE=["alGetError"]', '-s', 'EXPORTED_FUNCTIONS=["_main", "_alGetError"]'], stdout=PIPE, stderr=PIPE).stderr
     self.assertNotContained('''function requested to be exported, but not implemented: "_alGetError"''', err)
 
   def test_almost_asm_warning(self):
@@ -7797,7 +7797,7 @@ int main() {
 
   def test_o_level_clamp(self):
     for level in [3, 4, 20]:
-      err = run_process_compat([PYTHON, EMCC, '-O' + str(level), path_from_root('tests', 'hello_world.c')], stdout=PIPE, stderr=PIPE).stderr
+      err = run_process([PYTHON, EMCC, '-O' + str(level), path_from_root('tests', 'hello_world.c')], stdout=PIPE, stderr=PIPE).stderr
       assert os.path.exists('a.out.js'), '-O' + str(level) + ' should produce output'
       if level > 3:
         self.assertContained("optimization level '-O" + str(level) + "' is not supported; using '-O3' instead", err)
