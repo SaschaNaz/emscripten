@@ -113,7 +113,7 @@ There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR P
           continue
         target = args[1] if len(args) == 2 else 'hello_world.o'
         self.clear()
-        proc = Popen([PYTHON, compiler, path_from_root('tests', 'hello_world' + suffix)] + args, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+        proc = Popen([PYTHON, compiler, path_from_root('tests', 'hello_world' + suffix)] + args, stdout=PIPE, stderr=PIPE)
         proc.communicate()
         assert proc.returncode == 0, [proc.returncode, args]
         if args[-1] == '/dev/null':
@@ -3751,14 +3751,14 @@ int main(int argc, char **argv) {
 
     # Test that -s NO_DYNAMIC_EXECUTION=1 and --closure 1 are not allowed together.
     cmd = [PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-O1', '-s', 'NO_DYNAMIC_EXECUTION=1', '--closure', '1']
-    proc = Popen(cmd, stderr=PIPE, universal_newlines=True)
+    proc = Popen(cmd, stderr=PIPE)
     proc.communicate()
     assert proc.returncode != 0
     try_delete('a.out.js')
 
     # Test that -s NO_DYNAMIC_EXECUTION=1 and -s RELOCATABLE=1 are not allowed together.
     cmd = [PYTHON, EMCC, path_from_root('tests', 'hello_world.c'), '-O1', '-s', 'NO_DYNAMIC_EXECUTION=1', '-s', 'RELOCATABLE=1']
-    proc = Popen(cmd, stderr=PIPE, universal_newlines=True)
+    proc = Popen(cmd, stderr=PIPE)
     proc.communicate()
     assert proc.returncode != 0
     try_delete('a.out.js')
@@ -7762,7 +7762,7 @@ int main() {
         try_delete('a.out.wast')
         cmd = [PYTHON, EMCC, path_from_root('tests', 'other', 'ffi.c'), '-s', 'WASM=1', '-g', '-o', 'a.out.js'] + args
         print(' '.join(cmd))
-        proc = Popen(cmd, stdout=PIPE, universal_newlines=True)
+        proc = Popen(cmd, stdout=PIPE)
         output, err = proc.communicate()
         assert proc.returncode == 0
         text = open('a.out.wast').read()
@@ -7859,19 +7859,19 @@ int main() {
     env = os.environ.copy()
     if 'EMCC_STRICT' in env: del env['EMCC_STRICT']
 
-    process = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.cpp'), '-lsomenonexistingfile', '-s', 'STRICT=1'], stdout=PIPE, stderr=PIPE, env=env, universal_newlines=True)
+    process = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.cpp'), '-lsomenonexistingfile', '-s', 'STRICT=1'], stdout=PIPE, stderr=PIPE, env=env)
     process.communicate()
     assert process.returncode is not 0, '-llsomenonexistingfile is an error in strict mode'
 
-    process = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.cpp'), '-lsomenonexistingfile', '-s', 'ERROR_ON_MISSING_LIBRARIES=0'], stdout=PIPE, stderr=PIPE, env=env, universal_newlines=True)
+    process = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.cpp'), '-lsomenonexistingfile', '-s', 'ERROR_ON_MISSING_LIBRARIES=0'], stdout=PIPE, stderr=PIPE, env=env)
     process.communicate()
     assert process.returncode is 0, '-llsomenonexistingfile is not an error if -s ERROR_ON_MISSING_LIBRARIES=0 is passed'
 
-    process = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.cpp'), '-lsomenonexistingfile', '-s', 'STRICT=1', '-s', 'ERROR_ON_MISSING_LIBRARIES=0'], stdout=PIPE, stderr=PIPE, env=env, universal_newlines=True)
+    process = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.cpp'), '-lsomenonexistingfile', '-s', 'STRICT=1', '-s', 'ERROR_ON_MISSING_LIBRARIES=0'], stdout=PIPE, stderr=PIPE, env=env)
     process.communicate()
     assert process.returncode is 0, '-s ERROR_ON_MISSING_LIBRARIES=0 should override -s STRICT=1'
 
-    process = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.cpp'), '-lsomenonexistingfile', '-s', 'STRICT=0'], stdout=PIPE, stderr=PIPE, env=env, universal_newlines=True)
+    process = Popen([PYTHON, EMCC, path_from_root('tests', 'hello_world.cpp'), '-lsomenonexistingfile', '-s', 'STRICT=0'], stdout=PIPE, stderr=PIPE, env=env)
     process.communicate()
     # TODO: TEMPORARY: When -s ERROR_ON_MISSING_LIBRARIES=1 becomes the default, change the following line to expect failure instead of 0.
     assert process.returncode is 0, '-llsomenonexistingfile is not yet an error in non-strict mode'
