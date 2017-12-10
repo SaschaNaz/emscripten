@@ -2983,7 +2983,7 @@ window.close = function() {
     # see original in test_core.py
     output = Popen([PYTHON, path_from_root('tools', 'webidl_binder.py'),
                             path_from_root('tests', 'webidl', 'test.idl'),
-                            'glue'], universal_newlines=True).communicate()[0]
+                            'glue']).communicate()[0]
     assert os.path.exists('glue.cpp')
     assert os.path.exists('glue.js')
     for opts in [[], ['-O1'], ['-O2']]:

@@ -27,7 +27,7 @@ def clean_processes(processes):
 
 def make_relay_server(port1, port2):
   print('creating relay server on ports %d,%d' % (port1, port2), file=sys.stderr)
-  proc = Popen([PYTHON, path_from_root('tests', 'sockets', 'socket_relay.py'), str(port1), str(port2)], universal_newlines=True)
+  proc = Popen([PYTHON, path_from_root('tests', 'sockets', 'socket_relay.py'), str(port1), str(port2)])
   return proc
 
 class WebsockifyServerHarness(object):
@@ -96,7 +96,7 @@ class CompiledServerHarness(object):
   def __enter__(self):
     # assuming this is only used for WebSocket tests at the moment, validate that
     # the ws module is installed
-    child = Popen(NODE_JS + ['-e', 'require("ws");'], universal_newlines=True)
+    child = Popen(NODE_JS + ['-e', 'require("ws");'])
     child.communicate()
     global node_ws_module_installed
     # Attempt to automatically install ws module for Node.js.
@@ -104,17 +104,17 @@ class CompiledServerHarness(object):
       node_ws_module_installed = True
       Popen([NPM, 'install', path_from_root('tests', 'sockets', 'ws')], cwd=os.path.dirname(EMCC)).communicate()
       # Did installation succeed?
-      child = Popen(NODE_JS + ['-e', 'require("ws");'], universal_newlines=True)
+      child = Popen(NODE_JS + ['-e', 'require("ws");'])
       child.communicate()
     assert child.returncode == 0, 'ws module for Node.js not installed, and automatic installation failed! Please run \'npm install\' from %s' % EMSCRIPTEN_ROOT
 
     # compile the server
-    sp = Popen([PYTHON, EMCC, path_from_root('tests', self.filename), '-o', 'server.js', '-DSOCKK=%d' % self.listen_port] + self.args, universal_newlines=True)
+    sp = Popen([PYTHON, EMCC, path_from_root('tests', self.filename), '-o', 'server.js', '-DSOCKK=%d' % self.listen_port] + self.args)
     out = sp.communicate()
     print('Socket server build: out:', out[0] or '', '/ err:', out[1] or '')
     assert sp.returncode == 0
 
-    process = Popen(NODE_JS + ['server.js'], universal_newlines=True)
+    process = Popen(NODE_JS + ['server.js'])
     self.processes.append(process)
 
   def __exit__(self, *args, **kwargs):
@@ -578,7 +578,7 @@ int main () {
 
     # note: you may need to run this manually yourself, if npm is not in the path, or if you need a version that is not in the path
     Popen([NPM, 'install', path_from_root('tests', 'sockets', 'p2p')]).communicate()
-    broker = Popen(NODE_JS + [path_from_root('tests', 'sockets', 'p2p', 'broker', 'p2p-broker.js')], universal_newlines=True)
+    broker = Popen(NODE_JS + [path_from_root('tests', 'sockets', 'p2p', 'broker', 'p2p-broker.js')])
 
     expected = '1'
     self.run_browser(host_outfile, '.', ['/report_result?' + e for e in expected])
