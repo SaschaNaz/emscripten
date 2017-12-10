@@ -93,16 +93,16 @@ There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR P
       # properly report source code errors, and stop there
       self.clear()
       assert not os.path.exists('a.out.js')
-      output = run_process([PYTHON, compiler, path_from_root('tests', 'hello_world_error' + suffix)], stdout=PIPE, stderr=PIPE, check=False)
+      process = run_process([PYTHON, compiler, path_from_root('tests', 'hello_world_error' + suffix)], stdout=PIPE, stderr=PIPE, check=False)
       assert not os.path.exists('a.out.js'), 'compilation failed, so no output file is expected'
-      assert len(output.stdout) == 0, output.stdout
+      assert len(process.stdout) == 0, process.stdout
       assert process.returncode is not 0, 'Failed compilation must return a nonzero error code!'
-      self.assertNotContained('IOError', output.stderr) # no python stack
-      self.assertNotContained('Traceback', output.stderr) # no python stack
-      self.assertContained('error: invalid preprocessing directive', output.stderr)
-      self.assertContained(["error: use of undeclared identifier 'cheez", "error: unknown type name 'cheez'"], output.stderr)
-      self.assertContained('errors generated', output.stderr)
-      assert 'compiler frontend failed to generate LLVM bitcode, halting' in output.stderr.split('errors generated.')[1]
+      self.assertNotContained('IOError', process.stderr) # no python stack
+      self.assertNotContained('Traceback', process.stderr) # no python stack
+      self.assertContained('error: invalid preprocessing directive', process.stderr)
+      self.assertContained(["error: use of undeclared identifier 'cheez", "error: unknown type name 'cheez'"], process.stderr)
+      self.assertContained('errors generated', process.stderr)
+      assert 'compiler frontend failed to generate LLVM bitcode, halting' in process.stderr.split('errors generated.')[1]
 
       # emcc src.cpp -c    and   emcc src.cpp -o src.[o|bc] ==> should give a .bc file
       #      regression check: -o js should create "js", with bitcode content
