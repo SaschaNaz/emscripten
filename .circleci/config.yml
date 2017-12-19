@@ -44,7 +44,7 @@ jobs:
           popd
           echo EMSCRIPTEN_ROOT="'~/emscripten/'" >> .emscripten
           echo BINARYEN_ROOT="''" >> .emscripten
-          echo NODE_JS="node" >> .emscripten
+          echo NODE_JS="'node'" >> .emscripten
           EMCC_CORES=4 python2 emscripten/embuilder.py build ALL
           python2 emscripten/tests/runner.py test_hello_world
 
