@@ -3,6 +3,7 @@ defaults: &defaults
     - image: buildpack-deps:xenial
       environment:
         LANG: C.UTF-8
+        EMSCRIPTEN_ALLOW_NEWER_PYTHON: 1
   working_directory: ~/
 
 test-defaults: &test-defaults
