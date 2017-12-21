@@ -6863,12 +6863,12 @@ int main() {
       print(python, has)
       if has:
         print('  checking emcc...')
-        check_execute([python, EMCC, '--version'])
+        check_execute([python, EMCC[:-2], '--version'])
         print('  checking em++...')
-        check_execute([python, EMXX, '--version'])
+        check_execute([python, EMXX[:-2], '--version'])
         if python == 'python2':
           print('  checking emcc.py...')
-          check_execute([python, EMCC + '.py', '--version'])
+          check_execute([python, EMCC, '--version'])
 
   def test_zeroinit(self):
     open('src.c', 'w').write(r'''
