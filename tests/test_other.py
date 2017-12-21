@@ -60,6 +60,24 @@ class other(RunnerCore):
       self.assertNotContained('this is dangerous', output.stdout)
       self.assertNotContained('this is dangerous', output.stderr)
 
+  def test_emcc_python_version(self):
+    # use sys.executable as we have to know its version
+    output = run_process([sys.executable, path_from_root('emcc'), '--version'], stdout=PIPE, stderr=PIPE).stderr
+    major = sys.version_info.major
+    expected_call = 'Running on Python %s which is not officially supported yet' % major
+    expected_sanity = 'Configured to run on Python %s which is not offically supported' % major
+    if major > 2:
+      assert expected_call in output
+    else:
+      assert expected_call not in output
+    assert expected_sanity not in output
+
+    output = run_process([sys.executable, path_from_root('emcc'), '-v'], stdout=PIPE, stderr=PIPE).stderr
+    if major > 2:
+      assert expected_sanity in output
+    else:
+      assert expected_sanity not in output
+
   def test_emcc(self):
     for compiler in [EMCC, EMXX]:
       shortcompiler = os.path.basename(compiler)

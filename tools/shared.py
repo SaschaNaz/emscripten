@@ -522,8 +522,9 @@ def check_node_version():
     return False
 
 def check_python_version():
-  if sys.version_info.major > 2:
-    logging.warning('Python 3 support is experimental')
+  major = sys.version_info.major
+  if major > 2:
+    logging.warning('Configured to run on Python %s which is not offically supported' % major)
 
 def check_closure_compiler():
   try:
