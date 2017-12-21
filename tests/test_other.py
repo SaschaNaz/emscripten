@@ -61,9 +61,10 @@ class other(RunnerCore):
       self.assertNotContained('this is dangerous', output.stderr)
 
   def test_emcc_python_version(self):
-    # use sys.executable as we have to know its version
-    output = run_process([sys.executable, path_from_root('emcc'), '--version'], stdout=PIPE, stderr=PIPE).stderr
-    major = sys.version_info.major
+    output = run_process([PYTHON, '--version'], stdout=PIPE, stderr=PIPE)
+    major = int((output.stdout if output.stdout else output.stderr)[7]) # Python 2 emits version in stderr
+
+    output = run_process([PYTHON, path_from_root('emcc'), '--version'], stdout=PIPE, stderr=PIPE).stderr   
     expected_call = 'Running on Python %s which is not officially supported yet' % major
     expected_sanity = 'Configured to run on Python %s which is not offically supported' % major
     if major > 2:
@@ -72,7 +73,7 @@ class other(RunnerCore):
       assert expected_call not in output
     assert expected_sanity not in output
 
-    output = run_process([sys.executable, path_from_root('emcc'), '-v'], stdout=PIPE, stderr=PIPE).stderr
+    output = run_process([PYTHON, path_from_root('emcc'), '-v'], stdout=PIPE, stderr=PIPE).stderr
     if major > 2:
       assert expected_sanity in output
     else:

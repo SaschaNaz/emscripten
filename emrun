@@ -3,6 +3,7 @@
 # This script should work in python 2 *or* 3. It loads emrun.py, which needs python 2.
 
 import sys
+from tools import force_python_version
 
 if __name__ == '__main__' and not force_python_version.run(__file__):
   import emrun

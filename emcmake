@@ -4,7 +4,7 @@
 
 
 import sys
-
+from tools import force_python_version
 
 if __name__ == '__main__' and not force_python_version.run(__file__):
   import emcmake

@@ -5,6 +5,7 @@
 
 import os
 import sys
+from tools import force_python_version
 
 sys.argv += ['--emscripten-cxx']
 
