@@ -7,6 +7,7 @@ def run(filename):
     return False
   if os.environ.get('EMSCRIPTEN_ALLOW_NEWER_PYTHON'):
     import logging
+    from tools import colored_logger
     # TODO: colored log
     logging.warning('Running on Python %s which is not officially supported yet' % major)
     return False
