@@ -1505,7 +1505,7 @@ class Building(object):
     env['AR'] = quote(EMAR[:-3]) if not WINDOWS else 'python %s' % quote(EMAR)
     env['LD'] = quote(EMCC[:-3]) if not WINDOWS else 'python %s' % quote(EMCC)
     env['NM'] = quote(LLVM_NM)
-    env['LDSHARED'] = quote(EMCC) if not WINDOWS else 'python %s' % quote(EMCC)
+    env['LDSHARED'] = quote(EMCC[:-3]) if not WINDOWS else 'python %s' % quote(EMCC)
     env['RANLIB'] = quote(EMRANLIB) if not WINDOWS else 'python %s' % quote(EMRANLIB)
     env['EMMAKEN_COMPILER'] = quote(Building.COMPILER)
     env['EMSCRIPTEN_TOOLS'] = path_from_root('tools')
