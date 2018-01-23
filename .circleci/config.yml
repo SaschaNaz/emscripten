@@ -54,6 +54,9 @@ jobs:
             - .emscripten_ports/
             - .emscripten
 
+  temp-macos:
+    macos:
+      xcode: 9.0
   test-other-am:
     <<: *test-defaults
     environment:
@@ -134,6 +137,7 @@ workflows:
   build-test:
     jobs:
       - build
+      - temp-macos
       - test-other-am:
           requires:
             - build
