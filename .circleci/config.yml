@@ -57,6 +57,8 @@ jobs:
   temp-macos:
     macos:
       xcode: 9.0
+    steps:
+      - echo "macos!"
   test-other-am:
     <<: *test-defaults
     environment:
